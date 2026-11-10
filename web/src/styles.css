@@ -275,6 +275,14 @@ input:focus, select:focus { outline: none; border-color: var(--acc2); box-shadow
 }
 .spin { width: 16px; height: 16px; border: 2px solid rgba(139,92,246,.3); border-top-color: var(--acc2); border-radius: 50%; animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+.pending-button-face { display: inline-flex; align-items: center; gap: 8px; }
+.pending-button.is-pending { cursor: wait; }
+.pending-button.is-pending:disabled { opacity: 0.85; cursor: wait; }
+button.primary.is-pending .spin { border-color: rgba(255,255,255,.35); border-top-color: #fff; }
+@media (prefers-reduced-motion: reduce) {
+  .spin, .pending-button .spin, .busy .spin { animation: none; opacity: 0.9; }
+}
+
 .error {
   background: rgba(255,92,92,.08); border: 1px solid var(--red); color: #ffb0b0;
   padding: 12px 16px; border-radius: 14px; margin: 16px 0; font-size: 13px; cursor: pointer; word-break: break-word;
@@ -843,6 +851,9 @@ main.buyer-catalog-main, main.events-page { max-width: 1280px; }
 .event-create-form textarea { width: 100%; min-height: 100px; border: 1px solid var(--line2); border-radius: 12px; padding: 12px; background: var(--bg); color: var(--tx); font: inherit; resize: vertical; }
 .event-cover-fields { border: 1px solid var(--line2); padding: 18px; border-radius: 16px; display: grid; gap: 12px; }
 .event-cover-preview { max-width: 300px; width: 100%; aspect-ratio: 16/9; object-fit: cover; border-radius: 12px; }
+.organizer-public-listing p { color: var(--mut); font-size: 14px; line-height: 1.7; }
+.organizer-public-listing .primary { margin-top: 8px; }
+
 @media (max-width: 760px) { .public-detail-grid { grid-template-columns: 1fr; } .public-detail-buy { position: static; } }
 
 /* CT-MULTIGATE — existing F7h violet system, no new brand. */

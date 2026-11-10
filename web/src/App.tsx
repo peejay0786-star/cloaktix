@@ -5,6 +5,9 @@ import { DEMO_COVERS, parseEventDetails, formatPublishedUsd, type EventDetails }
 import { usePublicCatalog, PublishedListings, PublicEventDetail, EventInformation, TicketTrust, PurchaseNextSteps, type CatalogState } from './catalog/PublicCatalog';
 import { EventCreateForm, EventEditForm } from './EventCreateForm';
 import { buyerVisibleEvents, collapseDuplicateTypes, duplicateTypeName } from './catalog/buyerView';
+import { eventListedInCatalog, publishExistingEventListing, publishMeta, publishMetaResult, ticketListingValues } from './catalog/listingPublish';
+import { listingSaveError } from './catalog/listingErrors';
+import { PendingButton, WalletPendingButton, PENDING_SAVE, PENDING_WALLET } from './PendingButton';
 import { adultBuyBlock, ageStatusFor, asOfNow, AGE_CHANGED_EVENT, AGE_CHECK_ANCHOR } from './midnight/ageCredential';
 import { errorChainText, humanizeTxError } from './txError';
 import { loadOrganizerPayouts, saveOrganizerPayouts, eventIdFromCircuitResult } from './organizerPayoutStore';
@@ -90,20 +93,7 @@ const pullMeta = async (c?: string | null) => {
 };
 // Writes are signed with the organizer's metadata key; the server checks it against the on-chain organizer.
 // One-time: register that key on-chain via createEvent(payout = pk) (organizer = H(sk) is set by the contract's proof).
-const metaMessage = (c: string, kind: string, id: string, ts: number, v: unknown) => `cloaktix:meta:v1|${c}|${kind}|${id}|${ts}|${JSON.stringify(v)}`;
 const KEY_EVENTS = new Set<string>(); // key-registration events (not real events): hidden everywhere
-const publishMeta = async (s: Session, run: Run, kind: 'ev' | 'tt', id: bigint, v: Record<string, string>) => {
-  const k = await s.metaKey(); if (!k || !s.contract) return false;
-  const st = await s.state();
-  if (!st?.events.some((e) => e.mine && e.isKey)) {
-    const r = await run('Register organizer key (one-time)', () => s.call('createEvent', [{ bytes: Uint8Array.from(k.pk.match(/../g)!.map((h) => parseInt(h, 16))) }]));
-    if (!r) return false;
-  }
-  const ts = Date.now(); const { pk, sig } = await s.signMeta(metaMessage(s.contract, kind, String(id), ts, v));
-  const r = await fetch('/meta', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json', 'x-cloaktix-indexer': s.config.indexerUri }, body: JSON.stringify({ c: s.contract, kind, id: String(id), v, pk, ts, sig }) }).catch(() => null);
-  if (!r?.ok) console.warn('meta publish refused', r?.status, await r?.text());
-  return !!r?.ok;
-};
 const ROUTE_ORG = /^\/organizer\/?$/.test(location.pathname);
 const ROUTE_EVENT: bigint | null = (() => { const m = location.pathname.match(/^\/e\/(\d+)\/?$/); return m ? BigInt(m[1]) : null; })();
 (() => {
@@ -552,7 +542,7 @@ export function Events({ s, st, run, bump, openEvent }: P & { bump: (t: bigint, 
       <h2>Resale <span className="muted small">policy set by the organizer</span></h2>
       <div className="grid catalog-resale-grid">{st.listings.map((l) => <div className="card listing" key={String(l.id)}>
         <div><b>{ttName(s, l.typeId)}</b><p className="muted">Listing #{String(l.id)}{(l as any).serial != null ? ` · serial ${String((l as any).serial)}` : ''} · {evName(s, st.types.find((t) => t.id === l.typeId)?.eventId ?? 0n)}</p></div>
-        {l.mine ? <button onClick={async () => { const r = await run(`Cancel listing #${l.id}`, () => s.call('buyResale', [l.id])); if (r) bump(l.typeId, 1); }}>Withdraw</button>
+        {l.mine ? <WalletPendingButton run={run} label={`Cancel listing #${l.id}`} action={async () => { const r = await s.call('buyResale', [l.id]); if (r) bump(l.typeId, 1); }}>Withdraw</WalletPendingButton>
           : <PurchaseButton amount={l.price} disabled={resaleBusy || resaleResult?.kind === 'needs-prepare'}
             onOpen={s.schema === 3 ? () => prewarmV3Circuit(st.types.find((t) => t.id === l.typeId)?.adultOnly ? 'buyResaleAdult' : 'buyResale') : undefined}
             legacyNightPurchase={async () => {
@@ -564,7 +554,7 @@ export function Events({ s, st, run, bump, openEvent }: P & { bump: (t: bigint, 
     </> : (visible.length > 0 ? <p className="muted small resale-quiet">No resale listings right now.</p> : null)}
     {resaleResult && <div className="card">{resaleResult.kind === 'ready'
       ? <TransferTicket cap={resaleResult.cap} />
-      : <><h3>Ticket #{String(resaleResult.receipt.serial)} purchased</h3><p>Preparation did not finish. Your purchase is kept. Do not buy again.</p><p className="small muted">{resaleResult.error}</p><button disabled={resaleBusy} onClick={retryResalePrepare}>Prepare my ticket</button></>}</div>}
+      : <><h3>Ticket #{String(resaleResult.receipt.serial)} purchased</h3><p>Preparation did not finish. Your purchase is kept. Do not buy again.</p><p className="small muted">{resaleResult.error}</p><PendingButton disabled={resaleBusy} pending={resaleBusy} pendingLabel={PENDING_WALLET} onClick={retryResalePrepare}>Prepare my ticket</PendingButton></>}</div>}
   </section>;
 }
 
@@ -740,7 +730,7 @@ function AgeCheck({ s, run }: { s: Session; run: P['run'] }) {
     <p className="muted">18+ tickets (primary and resale) require a zero-knowledge age proof. The contract only learns “adult: yes”, never your birthdate or the credential.</p>
     <p className="note">{AGE_NOTE}</p>
     <div className="row"><label>Birthdate<input type="date" value={birth} onChange={(e) => setBirth(e.target.value)} /></label>
-      <button className="primary" onClick={async () => { await run('Get age credential', async () => { await s.getAgeCredential(birth); return {}; }); force((n) => n + 1); }}>Get demo age credential</button>
+      <WalletPendingButton className="primary" run={run} label="Get age credential" action={async () => { await s.getAgeCredential(birth); force((n) => n + 1); return {}; }}>Get demo age credential</WalletPendingButton>
       {status !== 'none' && <button onClick={async () => { await s.clearAgeCredential(); force((n) => n + 1); }}>Remove credential</button>}</div>
     <p className="small">Credential: <span className={status === 'adult' ? 'tag ok' : 'tag'}>{status === 'none' ? 'none' : status === 'adult' ? 'held (18+)' : 'held (under 18)'}</span></p>
   </div>;
@@ -770,7 +760,7 @@ export function Organizer({ s, st, run, setBusy, onOrganize }: P & { onOrganize?
     {s.schema !== 4 && (!s.contract || s.schema === 3) && <div className="card"><h3>1 · Deploy the CloakTix platform{s.schema === 3 ? ' (schema v3 · USD quotes / NIGHT)' : s.schema === 2 ? ' (schema v2)' : ''}</h3>
       {s.schema === 3
         ? <>
-            <p className="muted">Deploy a <b>new</b> schema v3 contract (USD quotes, paid in NIGHT) on Midnight Preview with <b>your</b> 1AM wallet. The rate-signer public key is baked into the app. Does <b>not</b> touch live v2 <code>7fd12c11…</code>. Keep <code>?schema=2</code> for existing tickets.</p>
+            <p className="muted">Deploy a <b>new</b> schema v3 contract (USD quotes, paid in NIGHT) on Midnight Preview with <b>your</b> 1AM wallet. The live Preview rate signer public key is baked in. Does <b>not</b> touch live v2 <code>7fd12c11…</code>. Keep <code>?schema=2</code> for existing tickets.</p>
             <p className="note">Block-limit safe: <b>{planV3DeploySteps().totalSteps} wallet confirmations</b> (1 create + verifier-key inserts). After each approval the app waits for on-chain inclusion before the next 1AM prompt (avoids “pending transaction”). If interrupted, click Deploy again. Resume skips steps already on-chain.</p>
             {s.contract ? <p className="note">This deploys a <b>new</b> contract. Existing events stay on the current address until the new one is wired in. Do not create a replacement event until then.</p> : null}
             {(() => { const p = loadV3DeployProgress(NETWORK); return p && p.status !== 'done' && p.address ? <p className="muted small">Resume available: step {p.step}/{p.totalSteps} ({p.message || p.status}).</p> : null; })()}
@@ -780,7 +770,7 @@ export function Organizer({ s, st, run, setBusy, onOrganize }: P & { onOrganize?
         : <p className="muted">Deploy once for this wallet. Your CloakTix identity (H(sk)) becomes admin (emergency pause, trusted age issuer). Trusted age issuer: the local Passport stub.</p>}
       {s.schema !== 2 && s.schema !== 3 && <p className="muted small">For unique serials / phone admit without burn-on-prepare, open <a href={'/organizer?schema=2&network=' + encodeURIComponent(NETWORK)}>Organizer · schema v2</a>.</p>}
       <p className="note">{AGE_NOTE}</p>
-      <button className="primary" onClick={() => run(s.schema === 3 ? 'Deploy schema v3 (batched)' : s.schema === 2 ? 'Deploy schema v2 contract (Preview)' : 'Deploy contract', async () => {
+      <WalletPendingButton className="primary" run={run} label={s.schema === 3 ? 'Deploy schema v3 (batched)' : s.schema === 2 ? 'Deploy schema v2 contract (Preview)' : 'Deploy contract'} action={async () => {
         if (s.schema === 3) {
           (s as any)._onDeployStep = (e: { step: number; totalSteps: number; label: string; detail?: string }) => {
             setBusy?.(`${e.label}${e.detail ? ': ' + e.detail : ''}`);
@@ -792,7 +782,7 @@ export function Organizer({ s, st, run, setBusy, onOrganize }: P & { onOrganize?
           return deployed;
         }
         finally { if (s.schema === 3) (s as any)._onDeployStep = undefined; }
-      })}>{s.schema === 3 ? `Deploy schema v3 (${planV3DeploySteps().totalSteps} steps)` : s.schema === 2 ? 'Deploy schema v2 (Preview)' : 'Deploy'}</button>
+      }}>{s.schema === 3 ? `Deploy schema v3 (${planV3DeploySteps().totalSteps} steps)` : s.schema === 2 ? 'Deploy schema v2 (Preview)' : 'Deploy'}</WalletPendingButton>
       {deployedAddress ? <p className="note">New contract: <code style={{wordBreak:'break-all'}}>{deployedAddress}</code>. Copy this full address and send it.</p> : null}
       <p className="muted small" style={{marginTop:12}}>or paste a contract address for <b>this</b> schema only (v1 and v2 addresses stay separate)</p>
       <div className="row"><input placeholder="contract address" value={paste} onChange={(e) => setPaste(e.target.value)} /><button onClick={() => { s.setContract(paste.trim()); location.reload(); }}>Use</button></div>
@@ -807,8 +797,8 @@ export function Organizer({ s, st, run, setBusy, onOrganize }: P & { onOrganize?
           const payload = publicEventMeta(details);
           meta.set(`${s.contract}:ev:${r.result}`, payload);
           if (s.contract) saveOrganizerPayouts(s.networkId || NETWORK, s.contract, eventIdFromCircuitResult(r.result) ?? String(r.result), { nightPayout: values.nightPayout });
-          const published=await publishMeta(s, run, 'ev', r.result as bigint, details);
-          setListingMessage(published?'Public listing saved. Add ticket types to publish ticket options.':'Created on Midnight, but the public listing was not saved. Edit details and retry organizer verification; do not create a duplicate event.');
+          const evWrite=await publishMetaResult(s, run, 'ev', r.result as bigint, details);
+          setListingMessage(evWrite.ok?'Public listing saved. Add ticket types to publish ticket options.':('Created on Midnight, but the public listing was not saved. '+listingSaveError(evWrite)+' Do not create a duplicate event.'));
           setCreated(r.result as bigint);
           setEv(details);
         }} />
@@ -821,6 +811,56 @@ export function Organizer({ s, st, run, setBusy, onOrganize }: P & { onOrganize?
   </>;
 }
 
+
+function PublicListingPanel({ s, st, run, eventId }: P & { eventId: bigint }) {
+  const details = parseEventDetails(meta.get(`${s.contract}:ev:${eventId}`) ?? {});
+  const types = (st?.types ?? []).filter((type) => type.eventId === eventId);
+  const [status, setStatus] = useState<'checking' | 'listed' | 'unlisted' | 'unavailable'>('checking');
+  const [message, setMessage] = useState('');
+  const [busy, setBusy] = useState(false);
+  const refresh = async () => {
+    if (!s.contract) { setStatus('unavailable'); return; }
+    try {
+      const response = await fetch(`/catalog?c=${encodeURIComponent(s.contract)}`, { credentials: 'same-origin', headers: { accept: 'application/json' } });
+      if (!response.ok) { setStatus('unavailable'); return; }
+      const catalog = await response.json();
+      setStatus(eventListedInCatalog(catalog, eventId) ? 'listed' : 'unlisted');
+    } catch { setStatus('unavailable'); }
+  };
+  useEffect(() => { void refresh(); }, [s.contract, eventId]);
+  const publish = async () => {
+    if (!details || !types.length || s.schema === 4 || busy) return;
+    setBusy(true); setMessage('');
+    try {
+      let lastFail: Parameters<typeof listingSaveError>[0] = { ok: false };
+      const result = await publishExistingEventListing({
+        eventId,
+        details,
+        types,
+        ticketValue: (type) => ticketListingValues(s.schema, type, ttName(s, type.id), meta.get(`${s.contract}:tt:${type.id}`)),
+        publish: async (kind, id, values) => {
+          const write = await publishMetaResult(s, run, kind, id, values);
+          if (write.ok) { meta.set(`${s.contract}:${kind}:${id}`, kind === 'ev' ? details : values); return true; }
+          lastFail = write; return false;
+        },
+      });
+      if (result === 'ok') { setMessage('Public listing saved. Visitors can see it on Events without connecting a wallet.'); await refresh(); }
+      else if (result === 'options-pending') { setMessage('Event details saved, but some ticket options are not published yet. Retry Publish to public catalog; do not recreate the event or ticket types.'); await refresh(); }
+      else setMessage(listingSaveError(lastFail));
+    } finally { setBusy(false); }
+  };
+  const blocked = s.schema === 4 || !details || types.length === 0 || busy;
+  return <section className="card organizer-public-listing" aria-labelledby="organizer-public-listing-heading">
+    <h2 id="organizer-public-listing-heading">Public catalog listing</h2>
+    <p>Visitors who have not connected a wallet only see events you publish here. This does not create a new event and does not change existing tickets.</p>
+    <p className="note" role="status">{status === 'checking' ? 'Checking whether this event is in the public catalog…' : status === 'listed' ? 'Listed in the public catalog.' : status === 'unlisted' ? 'Not listed in the public catalog yet.' : 'Public catalog status is unavailable right now.'}</p>
+    {!details && <p className="note">Complete public details first with Edit details, then publish. Do not create the event again.</p>}
+    {details && types.length === 0 && <p className="note">Add a ticket type first. The public catalog hides events that have no published ticket options.</p>}
+    <PendingButton type="button" className="primary" pending={busy} pendingLabel={PENDING_SAVE} disabled={blocked} onClick={() => void publish()}>Publish to public catalog</PendingButton>
+    {s.schema === 4 && <p className="note">Schema 4 is local-only. Public listing stays disabled.</p>}
+    {message && <p className="note" role="status">{message}</p>}
+  </section>;
+}
 
 export function OrganizeEventButton({ s, eventId, onOrganize }: { s: Session; eventId: bigint; onOrganize?: (id: bigint) => void }) {
   return <button className="primary organize-event-button" onClick={() => {
@@ -849,7 +889,7 @@ export function OrganizerEvent({ s, st, run, eventId, onBack, onOrganize }: P & 
     {info?.description && <p className="event-organizer-description">{info.description}</p>}
     <div className="row organizer-event-actions">
       {s.schema === 4 ? <button disabled title="Schema 4 is local-only">Edit details</button> : <EditDetails s={s} run={run} id={eventId} />}
-      <button disabled={s.schema === 4} onClick={() => run(event.open ? 'Close sales' : 'Open sales', () => s.call('setSalesOpen', [eventId, !event.open]))}>{event.open ? 'Close sales' : 'Open sales'}</button>
+      <WalletPendingButton disabled={s.schema === 4} run={run} label={event.open ? 'Close sales' : 'Open sales'} action={() => s.call('setSalesOpen', [eventId, !event.open])}>{event.open ? 'Close sales' : 'Open sales'}</WalletPendingButton>
       <CopyShare s={s} st={st} id={eventId} />
     </div>
     {s.schema === 4 && <p className="note">Schema 4 is a local implementation, not live. All on-chain submissions and deployment remain disabled.</p>}
@@ -859,6 +899,7 @@ export function OrganizerEvent({ s, st, run, eventId, onBack, onOrganize }: P & 
         : <p className="note" role="note">The NIGHT payout address was set at creation and cannot be changed. It is not saved on this device.</p>}
       <p className="small muted">Organizer-only private record. Never included in buyer pages, public metadata or share links.</p>
     </section>
+    <PublicListingPanel s={s} st={st} run={run} eventId={eventId} />
     <details className="card"><summary>Buyer share link</summary><ShareLink s={s} st={st} id={eventId} /></details>
     <section className="card"><h2>Tickets &amp; capacity</h2><p className="organizer-summary-stats"><span>{String(stats.sold)} / {String(stats.capacity)} sold</span><span>{stats.admitted} admitted</span></p>
       {stats.types.length === 0 ? <p className="muted">No ticket types yet. Add one below for this event.</p> : <div className="organizer-table-scroll"><table className="stats"><thead><tr><th>Ticket type</th><th>Price</th><th>Sold / capacity</th><th>Admitted</th></tr></thead><tbody>{stats.types.map(type => <tr key={String(type.id)}><td>{ttName(s, type.id)}{type.adultOnly && <span className="tag age">18+</span>}</td><td><Price amount={s.schema === 3 || s.schema === 4 ? undefined : type.price} usdCents={s.schema === 3 || s.schema === 4 ? String(type.price) : undefined} /></td><td>{String(type.sold)} / {String(type.supply)}</td><td>{used(type.id)}</td></tr>)}</tbody></table></div>}
@@ -876,6 +917,7 @@ function OrganizerTicketType({ s, st, run, eventId }: P & { eventId: bigint }) {
   const priceInput = quoteUsd(tt.price || '0', rates);
   const capInput = quoteUsd(tt.cap || '0', rates);
   const [listingMessage, setListingMessage] = useState('');
+  const [adding, setAdding] = useState(false);
   // CT-POLISH-3: one name per event. On-chain types cannot be removed, so a duplicate is blocked before signing.
   const dupName = duplicateTypeName(tt.name, eventId, st?.types ?? [], (id) => ttName(s, id));
   return <>      <div className="card"><h3>Add a ticket type</h3><p className="small muted">For {evName(s, eventId)} only.</p><fieldset className="event-type-fields" disabled={s.schema === 4}>
@@ -890,7 +932,10 @@ function OrganizerTicketType({ s, st, run, eventId }: P & { eventId: bigint }) {
           {tt.adult && <p className="note">{AGE_NOTE}</p>}
         </div>
         {dupName && <p role="alert" className="warn">A ticket type named “{dupName}” already exists for this event. Ticket types cannot be deleted on Midnight, so use a different name.</p>}
-        <button className="primary" disabled={!tt.name.trim() || !!dupName || !ttEvent || priceInput.kind!=='ready' || (tt.resale==='0' && capInput.kind!=='ready')} onClick={async () => {
+        <PendingButton className="primary" pending={adding} pendingLabel={PENDING_WALLET} disabled={!tt.name.trim() || !!dupName || !ttEvent || priceInput.kind!=='ready' || (tt.resale==='0' && capInput.kind!=='ready') || adding} onClick={async () => {
+          if (adding) return;
+          setAdding(true);
+          try {
           const r = await run('Add ticket type', async () => {
             if (duplicateTypeName(tt.name, eventId, st?.types ?? [], (id) => ttName(s, id))) throw new Error('A ticket type with this name already exists for this event.');
             const quote=quoteUsd(tt.price,rates),cap=quoteUsd(tt.cap,rates);
@@ -911,8 +956,9 @@ function OrganizerTicketType({ s, st, run, eventId }: P & { eventId: bigint }) {
             }));
             return {...response,usdCents:quote.cents.toString(),maxResaleUsdCents:tt.resale==='0'&&cap.kind==='ready'?cap.cents.toString():undefined};
           });
-          if (r) { const publishedType={name:tt.name,usdCents:r.usdCents,resaleSummary:tt.resale==='0'?(r.maxResaleUsdCents?`Capped resale, maximum ${formatPublishedUsd(r.maxResaleUsdCents)}`:'Capped resale, maximum confirmed after connection'):tt.resale==='1'?'Unlimited resale':'No resale'}; meta.set(`${s.contract}:tt:${r.result}`, publishedType); const ok=await publishMeta(s, run, 'tt', r.result as bigint, publishedType); setListingMessage(ok?'Ticket options published. Live availability is confirmed after connection.':'Ticket type created on Midnight, but public ticket options could not be saved. Do not add a duplicate type.'); }
-        }}>Add ticket type</button></fieldset>
+          if (r) { const publishedType={name:tt.name,usdCents:r.usdCents,resaleSummary:tt.resale==='0'?(r.maxResaleUsdCents?`Capped resale, maximum ${formatPublishedUsd(r.maxResaleUsdCents)}`:'Capped resale, maximum confirmed after connection'):tt.resale==='1'?'Unlimited resale':'No resale'}; meta.set(`${s.contract}:tt:${r.result}`, publishedType); const write=await publishMetaResult(s, run, 'tt', r.result as bigint, publishedType); setListingMessage(write.ok?'Ticket options published. Live availability is confirmed after connection.':('Ticket type created on Midnight, but public ticket options could not be saved. '+listingSaveError(write)+' Do not add a duplicate type.')); }
+          } finally { setAdding(false); }
+        }}>Add ticket type</PendingButton></fieldset>
         {s.schema === 4 && <p className="note">Schema 4 is local-only. Ticket-type submission remains disabled until a separately authorized v4 deployment.</p>}
         {listingMessage && <p role="status" className="note">{listingMessage}</p>}
       </div>
@@ -927,15 +973,12 @@ function EditDetails({ s, run, id }: { s: Session; run: Run; id: bigint }) {
   const k=`${s.contract}:ev:${id}`;const [editing,setEditing]=useState(false);
   if(!editing)return <button onClick={()=>setEditing(true)}>Edit details</button>;
   return <div className="editdet card"><EventEditForm initial={meta.get(k)??{}} onCancel={()=>setEditing(false)} onSubmit={async details=>{
-    const ok=await publishMeta(s,run,'ev',id,details);if(!ok)throw new Error('Organizer verification failed');meta.set(k,details);
+    const evWrite=await publishMetaResult(s,run,'ev',id,details);if(!evWrite.ok)throw new Error(listingSaveError(evWrite));meta.set(k,details);
     // Resaving an existing event also publishes its existing ticket options; never create duplicates to fill the public catalog.
     const state=await s.state().catch(()=>null);if(!state)return 'options-pending';
     let allSaved=true;
     for(const type of state.types.filter(t=>t.eventId===id)){
-      const cached=meta.get(`${s.contract}:tt:${type.id}`);
-      const cents=s.schema===3?((type as {priceUsdCents?:bigint}).priceUsdCents??type.price).toString():cached?.usdCents;
-      const values:Record<string,string>={name:ttName(s,type.id),resaleSummary:Number(type.resale)===CAPPED?(s.schema===3?`Capped resale, maximum ${formatPublishedUsd(type.maxResale.toString())}`:'Capped resale, live maximum confirmed after connection'):Number(type.resale)===UNLIMITED?'Unlimited resale':'No resale'};
-      if(typeof cents==='string')values.usdCents=cents;
+      const values=ticketListingValues(s.schema,type,ttName(s,type.id),meta.get(`${s.contract}:tt:${type.id}`));
       const saved=await publishMeta(s,run,'tt',type.id,values);if(saved)meta.set(`${s.contract}:tt:${type.id}`,values);else allSaved=false;
     }
     if(!allSaved)return 'options-pending';setEditing(false);
@@ -1040,7 +1083,7 @@ function Gate({ s, st }: { s: Session; st: St }) {
       </select></label>
       <p className="muted">Scan or paste the pass. Checks: on-chain <code>checkIns[passId]</code> exists (ticket burned), its ticket type is accepted here, the <code>checkIn</code> tx succeeded on this contract, and this gate has not admitted the pass before.</p>
       <div className="row"><input placeholder="cloaktix:pass:v1?…" value={code} onChange={(e) => setCode(e.target.value)} />
-        <button className="primary" disabled={b || !code} onClick={() => verify()}>Verify</button>
+        <PendingButton className="primary" pending={b} pendingLabel={PENDING_WALLET} disabled={b || !code} onClick={() => verify()}>Verify</PendingButton>
         <button onClick={() => { if (cameraScanSupported()) { setCam(true); setCamMsg(null); } else setCamMsg('Camera scanning is not available in this browser. Paste the code instead.'); }}>Scan with camera</button></div>
       {camMsg && <p className="warn small">{camMsg}</p>}
       {cam && <Scanner onClose={() => setCam(false)} onCode={(c) => { setCam(false); setCode(c); verify(c); }} />}

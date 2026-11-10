@@ -1,6 +1,7 @@
 export { PublicCatalog } from './catalog-object.js';
 
 import { handleCatalogRoute } from './catalog-route.js';
+import { INDEXER_ALLOW } from './indexer-allow.js';
 import { ZK_CHUNKS } from './zk-chunks.js';
 
 const MIME = {
@@ -161,7 +162,6 @@ async function serveChunked(request, env, url, path, info) {
 // browsers). Preprod's live indexer is Blockfrost and needs a project token. If the Worker secret
 // BLOCKFROST_PREPROD_PROJECT_ID is set, the retired host is mapped to Blockfrost with the token added server-side;
 // otherwise the request goes to the wallet's URI and a 410 is turned into a readable GraphQL error.
-const INDEXER_ALLOW = new Set(['indexer.preprod.midnight.network', 'midnight-preprod.blockfrost.io', 'indexer.preview.midnight.network']);
 const RETIRED_PREPROD = 'indexer.preprod.midnight.network';
 const gqlError = (message, code, status = 200) => new Response(JSON.stringify({ errors: [{ message, extensions: { code } }] }),
   { status, headers: { 'content-type': 'application/json', 'cache-control': 'no-store', 'Cross-Origin-Resource-Policy': 'same-origin', 'X-Content-Type-Options': 'nosniff' } });

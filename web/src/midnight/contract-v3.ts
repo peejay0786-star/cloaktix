@@ -24,7 +24,7 @@ export const MAX_QUOTE_AGE = 180n;
 export const SLIPPAGE_BPS = 100n;
 export const MAX_ADA_ATTEST_AGE = 300n;
 
-/** Live rate-signer Jubjub public key. The corresponding secret stays in the Worker secret store. */
+/** Live rateSigner Jubjub pk. Public; SK stays in Worker secret. */
 export const RATE_SIGNER_PK = {
   x: BigInt('0x6c6f6bdd5693bfbf50e134c283f6fc33fd87ee828e23a800c62b77227b71dd97'),
   y: BigInt('0x25473d932086847fcac8c163d4c693fdbf209f29115b2726c9a482b63ef35f3e'),

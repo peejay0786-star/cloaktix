@@ -1,4 +1,5 @@
 import {authenticateWrite,validWrite} from './catalog-store.js';
+import {allowedIndexerUrl} from './indexer-allow.js';
 const headers={'cache-control':'no-store','Cross-Origin-Resource-Policy':'same-origin','X-Content-Type-Options':'nosniff'};
 const json=(body,status=200)=>Response.json(body,{status,headers});
 async function readBody(request){
@@ -25,6 +26,7 @@ export async function handleCatalogRoute(request,env,{queryState}={}){
     if(!await authenticateWrite(j))return json({error:'Invalid organizer signature.'},403);
     const upstream=request.headers.get('x-cloaktix-indexer');
     if(!upstream||!queryState)return json({error:'Wallet indexer URI is required to verify organizer ownership.'},503);
+    if(!allowedIndexerUrl(upstream))return json({error:'The wallet indexer is not allowlisted for catalog verification.'},503);
     const state=await queryState(j.c,upstream);if(!state)return json({error:'Contract state is not indexed yet.'},404);
     const result=await env.PUBLIC_CATALOG.getByName(j.c).publish(j,state);
     return json(result.body,result.status);

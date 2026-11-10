@@ -2,6 +2,7 @@ import { useMemo, useState, useRef, useEffect, useId } from 'react';
 import { validateNightPayout, type NetworkKind } from './payoutAddresses';
 import { DEMO_COVERS, eventDetailsError, isValidEventDate, parseEventDetails, type EventDetails } from './catalog/model';
 import { prepareCoverImage } from './coverImage';
+import { PendingButton, PENDING_CREATE, PENDING_SAVE } from './PendingButton';
 export type EventCreateValues = EventDetails & { nightPayout: string };
 const emptyDetails: EventDetails = {name:'',date:'',venue:'',cover:'',description:'',demoArt:'false'};
 export function EventDetailsFields({ value, onChange }: { value: EventDetails; onChange: (v: EventDetails) => void }) {
@@ -68,13 +69,13 @@ export function EventCreateForm({ network, initial, onSubmit, busy=false }: { ne
       {night.kind==='invalid'&&ev.nightPayout&&<p id="night-payout-err" role="alert" className="warn">{night.message}</p>}
     </fieldset>
     {(submitError||problem)&&<p ref={errorRef} role="alert" className="warn">{submitError||problem}</p>}
-    <button className="primary" type="submit" disabled={locked}>{locked?'Creating…':'Create event'}</button>
+    <PendingButton className="primary" type="submit" pending={locked} pendingLabel={PENDING_CREATE} disabled={locked}>Create event</PendingButton>
   </form>;
 }
 export function EventEditForm({initial,onSubmit,onCancel}:{initial:Partial<EventDetails>;onSubmit:(v:EventDetails)=>Promise<void|'options-pending'>;onCancel:()=>void}){
   const [value,setValue]=useState<EventDetails>({...emptyDetails,...initial});const [busy,setBusy]=useState(false);const [error,setError]=useState('');
-  return <form className="event-create-form" onSubmit={async e=>{e.preventDefault();const details=parseEventDetails(value);if(!details||busy)return;setBusy(true);setError('');try{const result=await onSubmit(details);if(result==='options-pending')setError('Event details saved, but some ticket options are not published yet. Retry Save details; do not recreate the event or ticket types.');}catch{setError('Not saved. Check the connection and organizer verification, then try again.');}finally{setBusy(false);}}}>
+  return <form className="event-create-form" onSubmit={async e=>{e.preventDefault();const details=parseEventDetails(value);if(!details||busy)return;setBusy(true);setError('');try{const result=await onSubmit(details);if(result==='options-pending')setError('Event details saved, but some ticket options are not published yet. Retry Save details; do not recreate the event or ticket types.');}catch(e){setError(e instanceof Error&&e.message?e.message:'Not saved. Check the connection and organizer verification, then try again.');}finally{setBusy(false);}}}>
     <EventDetailsFields value={value} onChange={setValue}/><p className="small muted" role="status">{eventDetailsError(value)}</p>
-    <div className="row"><button className="primary" disabled={!!eventDetailsError(value)||busy}>Save details</button><button type="button" onClick={onCancel} disabled={busy}>Cancel</button></div>{error&&<p className="warn" role="alert">{error}</p>}
+    <div className="row"><PendingButton className="primary" type="submit" pending={busy} pendingLabel={PENDING_SAVE} disabled={!!eventDetailsError(value)||busy}>Save details</PendingButton><button type="button" onClick={onCancel} disabled={busy}>Cancel</button></div>{error&&<p className="warn" role="alert">{error}</p>}
   </form>;
 }

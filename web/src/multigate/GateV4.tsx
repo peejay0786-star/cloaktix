@@ -4,6 +4,7 @@ import type { ContractState } from '../midnight/viewTypes';
 import type { AdmitVerdict } from '../midnight/session-v2';
 import { accessibleDoors } from '../midnight/multiGate';
 import { cameraScanSupported, Scanner } from '../Scanner';
+import { PendingButton, PENDING_WALLET } from '../PendingButton';
 import { DoorLabels, StaffIdentity, useDoorNames, type StateV4 } from './DoorsStaff';
 export function GateV4({ s, st, evName, ttName }: { s: Session; st: ContractState | null; evName(s: Session, id: bigint): string; ttName(s: Session, id: bigint): string }) {
   const [current, setCurrent] = useState<StateV4 | null>(st?.schemaVersion === 4 ? st : null);
@@ -60,7 +61,7 @@ export function GateV4({ s, st, evName, ttName }: { s: Session; st: ContractStat
         <p className="small muted">Accepts {door.typeCount === 0n ? 'all ticket types for this event' : door.acceptedTypeIds.map(id => ttName(s, id)).join(', ')}.</p></>}
       <p className="muted">Scan a <code>cloaktix:admit:v2</code> code. Use your own 1AM wallet. No offline queue. If camera access is unavailable on iPhone, paste the ticket code.</p>
       <label>Ticket code<input autoComplete="off" spellCheck={false} type="password" placeholder="Paste ticket code" value={code} onChange={e => setCode(e.target.value)} disabled={busy} /></label>
-      <div className="row"><button className="primary" disabled={busy || !door || !online || !code} onClick={() => void verify()}>{busy ? 'Awaiting confirmation…' : 'Admit'}</button><button disabled={busy || !door || !online} onClick={() => { if (cameraScanSupported()) setCamera(true); }}>Scan</button></div>
+      <div className="row"><PendingButton className="primary" pending={busy} pendingLabel={PENDING_WALLET} disabled={busy || !door || !online || !code} onClick={() => void verify()}>Admit</PendingButton><button disabled={busy || !door || !online} onClick={() => { if (cameraScanSupported()) setCamera(true); }}>Scan</button></div>
       {camera && <Scanner onClose={() => setCamera(false)} onCode={text => { setCamera(false); void verify(text); }} />}
       {verdict && <div role="status" className={verdict.ok ? 'verdict ok' : 'verdict ko'}>{verdict.ok ? <>✓ Admitted<small>{ttName(s, verdict.typeId)} · confirmed on Midnight</small></> : <>✕ Refused<small>{verdict.reason}</small></>}</div>}
     </section>

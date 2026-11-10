@@ -15,7 +15,8 @@ Thanks to the Midnight developer community and the [midnightntwrk](https://githu
 - Contract (public): `b92733389b1955c913dec004df708a12697df4a962ffab5dbde1e88f574ab04e`
 - Schema: rate-v3 (schema 3)
 - Platform fee: 3% (`feeBps` = 300), sealed at deploy
-- App: `app.cloaktix.com` (Cloudflare Access). Public landing: `cloaktix.com`
+- App (public): https://app.cloaktix.com
+- Landing: https://cloaktix.com
 
 The contract was deployed by the project owner with 1AM on 2026-11-09. This repository does not sign transactions. The owner signs in 1AM.
 
@@ -34,6 +35,21 @@ The contract was deployed by the project owner with 1AM on 2026-11-09. This repo
 - **Single-use check-in.** Preparing a pass burns the ticket on-chain and records a nullifier. The Gate tab verifies the pass and refuses a replay.
 - **Door-safe screen.** The app does not show wallet balances, because the phone may be shown at the door.
 - **Same tickets on every device** when the identity is derived from the wallet, or moved with a transfer code. "My tickets" reads balances from the chain.
+
+
+## Screenshots
+
+Captured from the public Preview app on 10 November 2026:
+
+![Home](docs/screenshots/01-home.png)
+
+![How it works](docs/screenshots/02-how-it-works.png)
+
+![Events](docs/screenshots/03-events.png)
+
+![CloakTix Launch Night](docs/screenshots/04-launch-night.png)
+
+![Organize event](docs/screenshots/05-organizer.png)
 
 ## Architecture
 
@@ -130,6 +146,7 @@ web/                React app, tests, static assets
 preview-worker/     Cloudflare Worker for app.cloaktix.com
 coming-soon/        Public cloaktix.com landing
 slides/             Wave 3 deck (HTML + PDF)
+docs/screenshots/   Public app screenshots (10 November 2026)
 e2e/  test/         Simulator and end-to-end tests
 brand/              Logo and brand kit (please do not modify the logo)
 ```

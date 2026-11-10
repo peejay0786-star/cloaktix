@@ -63,7 +63,7 @@ it('summary cards have Organize event, own events only, short stats and no embed
 });
 it('schema 3 management is scoped to one event and keeps current edit/sales/share/type tools', () => {
   const html = ui.manage({ ...props(), eventId: 1n });
-  for (const text of ['← Back to My events', 'Midnight Summit — Montréal', 'Illustrative description.', 'Edit details', 'Close sales', 'Buyer share link', 'Add a ticket type', 'Tickets &amp; capacity', 'This event type']) assert.ok(html.includes(text), 'Missing event management section: ' + text);
+  for (const text of ['← Back to My events', 'Midnight Summit — Montréal', 'Illustrative description.', 'Edit details', 'Close sales', 'Public catalog listing', 'Publish to public catalog', 'Buyer share link', 'Add a ticket type', 'Tickets &amp; capacity', 'This event type']) assert.ok(html.includes(text), 'Missing event management section: ' + text);
   assert.ok(!html.includes('Other own event')); assert.ok(!html.includes('Other event type'));
   assert.ok(!html.includes('<label>Event<select')); assert.ok(!html.includes('class="doors-staff"'));
   assert.ok(html.includes('Doors &amp; staff requires a separate schema-4 contract'));

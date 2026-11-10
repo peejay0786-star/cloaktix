@@ -4,6 +4,7 @@ import { Price, formatNight } from './Price';
 import { useRates } from './useRates';
 import { canPay, executeSelectedPayment, type PaymentMethod } from './paymentMethod';
 import { clampQty, fmtUsd, qtyTotals } from './multiBuyQty';
+import { PendingButton, PENDING_WALLET } from './PendingButton';
 export type { PaymentMethod } from './paymentMethod';
 export { canPay, executeSelectedPayment };
 
@@ -34,9 +35,9 @@ export function CheckoutPanel({ amount, usdCents, onPay, busy = false, error = '
       {error ? <p role="alert" className="warn">{error}</p> : null}
       {error && onOneAtATime ? <button type="button" className="ghost wide" onClick={onOneAtATime}>Buy one at a time instead</button> : null}
       <p className="small muted">USD and NIGHT are reference estimates, not locked quotes. Preview test assets have no cash value.</p>
-      <button type="button" className="primary big" disabled={busy || !!error} onClick={() => { if (!busy) onPay(); }}>
-        {busy ? 'Processing…' : `Pay for ${qty} tickets with NIGHT on Midnight`}
-      </button>
+      <PendingButton type="button" className="primary big" pending={busy} pendingLabel={PENDING_WALLET} disabled={busy || !!error} onClick={() => { if (!busy) onPay(); }}>
+        {`Pay for ${qty} tickets with NIGHT on Midnight`}
+      </PendingButton>
     </section>;
   }
   // Schema v3 prices are USD cents; v1/v2 prices are NIGHT atoms.
@@ -50,9 +51,9 @@ export function CheckoutPanel({ amount, usdCents, onPay, busy = false, error = '
     <p className="small muted">NIGHT on Midnight only. After payment, find your pass in My tickets to print, show QR or Send to phone.</p>
     {error ? <p role="alert" className="warn">{error}</p> : null}
     <p className="small muted">USD and NIGHT are reference estimates, not locked quotes. Preview test assets have no cash value.</p>
-    <button type="button" className="primary big" disabled={busy || !!error} onClick={() => { if (!busy) onPay(); }}>
-      {busy ? 'Processing…' : 'Pay with NIGHT on Midnight'}
-    </button>
+    <PendingButton type="button" className="primary big" pending={busy} pendingLabel={PENDING_WALLET} disabled={busy || !!error} onClick={() => { if (!busy) onPay(); }}>
+      Pay with NIGHT on Midnight
+    </PendingButton>
     <p className="small muted market-data">Market data: <a href="https://www.coingecko.com/" target="_blank" rel="noreferrer">CoinGecko</a> · <a href="https://www.kraken.com/" target="_blank" rel="noreferrer">Kraken</a></p>
   </section>;
 }

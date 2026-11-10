@@ -81,6 +81,15 @@ On 10 November 2026, several buyer-facing UI fixes were implemented in the curre
 
 A Wave 3 deck v4 was also prepared from the current app visuals (`slides/cloaktix-deck-v4.pdf`).
 
+
+## 10 November 2026 evening: public catalog and open app
+
+Later on 10 November 2026, the walletless Events catalog was fixed so organizers can publish a listing for an event that already exists on-chain. Organize event now has a Publish to public catalog button. The write waits for organizer-key registration and retries if the catalog is not ready yet. Wallet and save buttons show a loading state while a 1AM approval is pending. If a public listing save fails, the app shows the real reason in plain English, instead of a generic error. The Preview Worker indexer allowlist now includes the 1AM Preview indexer; without that, catalog publishes from 1AM were refused with 503.
+
+The app at https://app.cloaktix.com was opened to the public (Cloudflare Access was removed for that hostname only) so AKINDO Wave 3 judges can browse it without a login. Coming Soon on https://cloaktix.com was left unchanged. The project was submitted to AKINDO Wave 3.
+
+CloakTix Launch Night (event 3) is the organizer-published event in the public catalog. The 18+ flow still uses the demo Passport stub issuer, which is now publicly reachable. It is not a real ID check.
+
 ## Honest leftover limits
 
 - The age issuer is still the demo Passport stub.

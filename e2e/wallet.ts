@@ -323,18 +323,12 @@ export async function syncWallet(
 // Which wallet a run uses
 // ---------------------------------------------------------------------------
 
-/** Genesis-funded seeds on the local `undeployed` devnet.
- *  Official Midnight local-devnet seeds are not stored in this repository.
- *  When running local e2e tests, set MIDNIGHT_LOCAL_ALICE_SEED,
- *  MIDNIGHT_LOCAL_BOB_SEED, MIDNIGHT_LOCAL_CHARLIE_SEED and
- *  MIDNIGHT_LOCAL_DAVE_SEED to the official undeployed genesis seeds
- *  (hex, no 0x prefix). See Midnight's local network docs.
- */
+/** Genesis-funded seeds on the local `undeployed` devnet. */
 export const LOCAL_SEEDS = {
-  ALICE: process.env['MIDNIGHT_LOCAL_ALICE_SEED'] ?? '',
-  BOB: process.env['MIDNIGHT_LOCAL_BOB_SEED'] ?? '',
-  CHARLIE: process.env['MIDNIGHT_LOCAL_CHARLIE_SEED'] ?? '',
-  DAVE: process.env['MIDNIGHT_LOCAL_DAVE_SEED'] ?? '',
+  ALICE: '0000000000000000000000000000000000000000000000000000000000000001',
+  BOB: '0000000000000000000000000000000000000000000000000000000000000002',
+  CHARLIE: '0000000000000000000000000000000000000000000000000000000000000003',
+  DAVE: '000000000000000000000000000000000000000000000000000000000000000d',
 } as const;
 
 /** The four wallets a remote run is funded with. */
