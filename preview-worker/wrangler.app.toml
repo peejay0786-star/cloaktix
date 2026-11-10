@@ -1,0 +1,26 @@
+name = "cloaktix-app"
+compatibility_date = "2024-11-01"
+main = "worker.js"
+workers_dev = false
+preview_urls = false
+routes = [{ pattern = "app.cloaktix.com", custom_domain = true }]
+
+[assets]
+directory = "../web-dist-app-preview"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = true
+
+[alias]
+"@midnightntwrk/onchain-runtime-v4" = "./onchain-runtime-shim.js"
+"@midnight-ntwrk/onchain-runtime-v4" = "./onchain-runtime-shim.js"
+"@midnight-ntwrk/compact-runtime" = "./node_modules/@midnight-ntwrk/compact-runtime/dist/index.js"
+
+# Local implementation only: no resource has been provisioned or deployed.
+[[durable_objects.bindings]]
+name = "PUBLIC_CATALOG"
+class_name = "PublicCatalog"
+
+[[migrations]]
+tag = "public-catalog-v1"
+new_sqlite_classes = ["PublicCatalog"]

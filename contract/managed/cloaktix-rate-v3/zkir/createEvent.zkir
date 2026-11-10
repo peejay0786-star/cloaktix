@@ -1,0 +1,43 @@
+{
+  "version": { "major": 3, "minor": 1 },
+  "do_communications_commitment": true,
+  "inputs": [
+    { "name": "%payout.0", "type": "Scalar<BLS12-381>" },
+    { "name": "%payout.1", "type": "Scalar<BLS12-381>" }
+  ],
+  "outputs": [
+    "Scalar<BLS12-381>"
+  ],
+  "instructions": [
+    { "op": "constrain_bits", "val": "%payout.0", "bits": 8 },
+    { "op": "constrain_bits", "val": "%payout.1", "bits": 248 },
+    { "op": "public_input", "type": "Scalar<BLS12-381>", "output": "%t.2", "guard": null },
+    { "op": "impact", "guard": "0x01", "inputs": ["0x30"] },
+    { "op": "impact", "guard": "0x01", "inputs": ["0x51", "0x01", "0x01", "0x01", "0x01", "0x01", "0x03"] },
+    { "op": "impact", "guard": "0x01", "inputs": ["0x0c", "0x01", "0x01", "%t.2"] },
+    { "op": "cond_select", "output": "%t.3", "bit": "%t.2", "a": "0x00", "b": "0x01" },
+    { "op": "assert", "cond": "%t.3" },
+    { "op": "public_input", "type": "Scalar<BLS12-381>", "output": "%t.4", "guard": null },
+    { "op": "impact", "guard": "0x01", "inputs": ["0x30"] },
+    { "op": "impact", "guard": "0x01", "inputs": ["0x51", "0x01", "0x01", "0x01", "0x01", "0x01", "0x08"] },
+    { "op": "impact", "guard": "0x01", "inputs": ["0x0d", "0x01", "0x08", "%t.4"] },
+    { "op": "add", "output": "%t.5", "a": "%t.4", "b": "0x01" },
+    { "op": "constrain_bits", "val": "%t.5", "bits": 64 },
+    { "op": "copy", "output": "%id.6", "val": "%t.5" },
+    { "op": "private_input", "type": "Scalar<BLS12-381>", "output": "%t.7", "guard": null },
+    { "op": "constrain_bits", "val": "%t.7", "bits": 8 },
+    { "op": "private_input", "type": "Scalar<BLS12-381>", "output": "%t.8", "guard": null },
+    { "op": "constrain_bits", "val": "%t.8", "bits": 248 },
+    { "op": "persistent_hash", "output": "%bytes.9", "alignment": [{ "tag": "atom", "value": { "length": 32, "tag": "bytes" } }], "inputs": ["%t.7", "%t.8"] },
+    { "op": "bytes_into_natives", "outputs": ["%t.10", "%t.11"], "bytes": "%bytes.9" },
+    { "op": "impact", "guard": "0x01", "inputs": ["0x71", "0x01", "0x01", "0x01", "0x01", "0x01", "0x04"] },
+    { "op": "impact", "guard": "0x01", "inputs": ["0x10", "0x01", "0x01", "0x08", "%id.6"] },
+    { "op": "impact", "guard": "0x01", "inputs": ["0x11", "0x01", "0x03", "0x20", "0x20", "0x01", "%t.11", "%t.10", "%payout.0", "%payout.1", "0x01"] },
+    { "op": "impact", "guard": "0x01", "inputs": ["0x91"] },
+    { "op": "impact", "guard": "0x01", "inputs": ["0xa2"] },
+    { "op": "impact", "guard": "0x01", "inputs": ["0x71", "0x01", "0x01", "0x01", "0x01", "0x01", "0x08"] },
+    { "op": "impact", "guard": "0x01", "inputs": ["0x0e", "0x01"] },
+    { "op": "impact", "guard": "0x01", "inputs": ["0xa2"] },
+    { "op": "output", "vals": ["%id.6"] }
+  ]
+}

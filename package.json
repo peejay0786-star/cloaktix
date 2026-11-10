@@ -1,0 +1,18 @@
+{
+  "name": "cloaktix",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "compile": "compact compile contract/cloaktix.compact contract/managed/cloaktix",
+    "compile:fast": "compact compile --skip-zk contract/cloaktix.compact contract/managed/cloaktix",
+    "test:sim": "vitest run -c vitest.sim.config.mjs",
+    "test:local": "MIDNIGHT_NETWORK=local NODE_OPTIONS='--experimental-vm-modules' vitest run -c vitest.config.mjs --silent=false",
+    "test:web": "node --experimental-strip-types --test web/test/passStore.node.test.mts web/test/admitV2.node.test.mts",
+    "compile:v2:fast": "compact compile --skip-zk contract/cloaktix-v2.compact contract/managed/cloaktix-v2",
+    "test:v2": "node --experimental-strip-types --test test/cloaktix-v2.sim.node.test.mjs test/deploy-budget.v2.node.test.mjs web/test/admitV2.node.test.mts web/test/admitDomain.node.test.mts",
+    "build:web:v2-local": "cd web && VITE_NETWORK=preview VITE_CLOAKTIX_SCHEMA=2 npx vite build --outDir ../web-dist-v2-local --emptyOutDir",
+    "measure:deploy:v2": "node audit/deploy-budget/measure-deploy-cost.mjs contract/managed/cloaktix-v2 --headroom 0.6"
+  }
+}

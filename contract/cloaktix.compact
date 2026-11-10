@@ -1,0 +1,255 @@
+// SPDX-License-Identifier: Apache-2.0
+// CloakTix — private event tickets on Midnight. TESTNET/LOCAL ONLY, not audited.
+// Base: OpenZeppelin compact-contracts @9b6b21a (MultiToken, Pausable, audited v0.1.0).
+// Custom code kept deliberately short: events, ticket types, sales, resale policy, 18+ gating, single-use check-in.
+pragma language_version >= 0.21.0;
+
+import CompactStandardLibrary;
+import "../../oz/contracts/src/token/MultiToken" prefix MT_;
+import "../../oz/contracts/src/security/Pausable" prefix P_;
+
+export { ContractAddress, Either, Maybe, UserAddress };
+
+// User secret key (local private state). Public identity = H(sk).
+witness wit_CloakSK(): Bytes<32>;
+// Age credential held by the buyer (local private state). Never disclosed; only "adult: yes" is checked.
+witness wit_AgeCredential(): Maybe<AgeCredential>;
+
+// Resale policy chosen by the organizer per ticket type. 3% fee on every resale when allowed.
+export enum ResaleMode { capped, unlimited, none }
+
+// ---- 18+ age credential ----
+// Signature and proof layout follow the Midnight Verifiable Credentials core (proof-semantics.md):
+// Jubjub Schnorr, s*G == r + c*publicKey, issuance context tag, payload root over
+// [bodyRoot, contextTag, signer ref, createdAt, challengeHash]. Today the issuer is a swappable,
+// admin-set key (demo: local "Passport stub"); Midnight Passport can take over once it ships.
+export struct AgeClaim {
+  holder: Bytes<32>;    // CloakTix account id H(sk) the credential is bound to
+  adultFrom: Uint<64>;  // unix seconds when the holder turns 18 (birthdate + 18 years); no birthdate on-chain
+}
+export struct AgeSignature { r: JubjubPoint; s: Field; }
+export struct AgeProof {
+  issuerMethod: Bytes<32>;   // issuer verification-method id (stands in for the VC signer reference)
+  createdAt: Uint<64>;
+  challengeHash: Bytes<32>;
+  publicKey: JubjubPoint;
+  signature: AgeSignature;
+}
+export struct AgeCredential { claim: AgeClaim; proof: AgeProof; }
+
+export struct EventInfo { organizer: Bytes<32>; payout: UserAddress; open: Boolean; }
+export struct TicketType {
+  eventId: Uint<64>; price: Uint<64>; fee: Uint<64>;
+  supply: Uint<64>; sold: Uint<64>; resale: ResaleMode; maxResale: Uint<64>; // maxResale used only when capped
+  adultOnly: Boolean;   // 18+: buyers (primary and resale) must prove an age credential
+}
+export struct Listing {
+  seller: Bytes<32>; payout: UserAddress; typeId: Uint<128>; price: Uint<64>; fee: Uint<64>;
+}
+
+export sealed ledger feeBps: Uint<16>;        // 300 = 3%
+export sealed ledger feeAddress: UserAddress; // receives fees (primary sales and resales)
+export sealed ledger admin: Bytes<32>;        // H(sk) of the platform admin (emergency pause)
+export ledger events: Map<Uint<64>, EventInfo>;
+export ledger ticketTypes: Map<Uint<128>, TicketType>;
+export ledger listings: Map<Uint<64>, Listing>;
+export ledger eventCount: Counter;
+export ledger typeCount: Counter;
+export ledger listingCount: Counter;
+// Single-use entry passes: passId (random, chosen by the holder) -> ticket type checked in.
+export ledger checkIns: Map<Bytes<32>, Uint<128>>;
+// Trusted age issuer public key (admin can swap it, e.g. to Midnight Passport).
+export ledger ageIssuer: JubjubPoint;
+
+constructor(uri_: Opaque<"string">, feeBps_: Uint<16>, feeAddress_: UserAddress, admin_: Bytes<32>, ageIssuer_: JubjubPoint) {
+  MT_initialize(uri_);
+  assert(disclose(feeBps_) <= 10000, "feeBps > 100%");
+  feeBps = disclose(feeBps_);
+  feeAddress = disclose(feeAddress_);
+  admin = disclose(admin_);
+  ageIssuer = disclose(ageIssuer_);
+}
+
+circuit me(): Bytes<32> {
+  return MT_computeAccountId(wit_CloakSK());
+}
+
+// No division in circuits: the caller supplies fee and we check fee = floor(price*bps/10000).
+circuit checkFee(p: Uint<64>, f: Uint<64>): [] {
+  const pb = p * feeBps;
+  assert(f * 10000 <= pb, "fee too high");
+  assert(pb < (f + 1) * 10000, "fee too low");
+}
+
+circuit pay(amount: Uint<64>, fee: Uint<64>, to: UserAddress): [] {
+  receiveUnshielded(nativeToken(), amount as Uint<128>);
+  if (fee > 0) {
+    sendUnshielded(nativeToken(), fee as Uint<128>, right<ContractAddress, UserAddress>(feeAddress));
+  }
+  if (amount > fee) {
+    sendUnshielded(nativeToken(), (amount - fee) as Uint<128>, right<ContractAddress, UserAddress>(to));
+  }
+}
+
+// Issuer signing challenge (pure: the off-chain issuer uses the exact same function).
+export pure circuit ageChallenge(claim: AgeClaim, issuerMethod: Bytes<32>, createdAt: Uint<64>,
+                                 challengeHash: Bytes<32>, publicKey: JubjubPoint, r: JubjubPoint): Field {
+  const body = persistentHash<AgeClaim>(claim);
+  const payload = persistentHash<Vector<5, Bytes<32>>>([body, pad(32, "midnight:vc:issuance"), issuerMethod,
+    upgradeFromTransient(transientHash<Uint<64>>(createdAt)), challengeHash]);
+  return degradeToTransient(persistentHash<Vector<3, Bytes<32>>>([payload,
+    upgradeFromTransient(transientHash<Vector<2, Field>>([jubjubPointX(publicKey), jubjubPointY(publicKey)])), upgradeFromTransient(transientHash<Vector<2, Field>>([jubjubPointX(r), jubjubPointY(r)]))]));
+}
+
+// Proves "the caller is 18+ at asOf" without revealing the credential, birthdate or issuer signature.
+// Only called by the *Adult circuits, so ordinary purchases do not pay for the signature check.
+// asOf is public but chosen by the buyer (current time); it must not be in the future.
+circuit assertAdult(asOf: Uint<64>): [] {
+  const m = wit_AgeCredential();
+  const c = m.value;
+  assert(disclose(m.is_some), "Age credential required (18+)");
+  assert(disclose(c.proof.publicKey == ageIssuer), "Age credential from an untrusted issuer");
+  assert(disclose(c.claim.holder == me()), "Age credential issued to another account");
+  const ch = ageChallenge(c.claim, c.proof.issuerMethod, c.proof.createdAt, c.proof.challengeHash, c.proof.publicKey, c.proof.signature.r);
+  assert(disclose(ecMulGenerator(c.proof.signature.s as JubjubScalar) == ecAdd(c.proof.signature.r, ecMul(c.proof.publicKey, ch as JubjubScalar))),
+         "Invalid age credential signature");
+  const t = disclose(asOf);
+  assert(blockTimeGte(t), "asOf is in the future");
+  assert(disclose(c.claim.adultFrom <= t), "Under 18");
+}
+
+// ---- Organizer ----
+export circuit createEvent(payout: UserAddress): Uint<64> {
+  P_assertNotPaused();
+  const id = (eventCount.read() + 1) as Uint<64>;
+  events.insert(id, EventInfo { organizer: disclose(me()), payout: disclose(payout), open: true });
+  eventCount.increment(1);
+  return id;
+}
+
+export circuit addTicketType(eventId: Uint<64>, price: Uint<64>, fee: Uint<64>,
+                             supply: Uint<64>, resale: ResaleMode, maxResale: Uint<64>, adultOnly: Boolean): Uint<128> {
+  P_assertNotPaused();
+  const e = disclose(eventId);
+  assert(events.member(e), "No event");
+  assert(disclose(events.lookup(e).organizer == me()), "Not organizer");
+  const p = disclose(price);
+  const f = disclose(fee);
+  checkFee(p, f);
+  const id = (typeCount.read() + 1) as Uint<128>;
+  ticketTypes.insert(id, TicketType {
+    eventId: e, price: p, fee: f, supply: disclose(supply), sold: 0, resale: disclose(resale),
+    maxResale: disclose(resale) == ResaleMode.capped ? disclose(maxResale) : 0, adultOnly: disclose(adultOnly) });
+  typeCount.increment(1);
+  return id;
+}
+
+export circuit setSalesOpen(eventId: Uint<64>, open: Boolean): [] {
+  const e = disclose(eventId);
+  assert(events.member(e), "No event");
+  const ev = events.lookup(e);
+  assert(disclose(ev.organizer == me()), "Not organizer");
+  events.insert(e, EventInfo { organizer: ev.organizer, payout: ev.payout, open: disclose(open) });
+}
+
+// ---- Primary sale: 1 ticket, 3% fee to feeAddress, the rest to the organizer ----
+// Two entry points so that only 18+ purchases carry the (expensive) age proof:
+//   buyTicket(typeId)            non-18+ types only
+//   buyTicketAdult(typeId, asOf) any type, with a ZK age credential (asOf = current unix time)
+circuit sellPrimary(typeId: Uint<128>, adultProven: Boolean): [] {
+  P_assertNotPaused();
+  const t = disclose(typeId);
+  assert(ticketTypes.member(t), "No ticket type");
+  const tt = ticketTypes.lookup(t);
+  assert(adultProven || !tt.adultOnly, "18+ ticket type: age proof required (buyTicketAdult)");
+  const ev = events.lookup(tt.eventId);
+  assert(ev.open, "Sales closed");
+  assert(tt.sold < tt.supply, "Sold out");
+  pay(tt.price, tt.fee, ev.payout);
+  MT__mint(left<Bytes<32>, ContractAddress>(me()), t, 1);
+  ticketTypes.insert(t, TicketType { eventId: tt.eventId, price: tt.price, fee: tt.fee,
+    supply: tt.supply, sold: (tt.sold + 1) as Uint<64>, resale: tt.resale, maxResale: tt.maxResale, adultOnly: tt.adultOnly });
+}
+export circuit buyTicket(typeId: Uint<128>): [] { sellPrimary(typeId, false); }
+export circuit buyTicketAdult(typeId: Uint<128>, asOf: Uint<64>): [] {
+  assertAdult(asOf);
+  sellPrimary(typeId, true);
+}
+
+// ---- Resale: the only transfer path (no direct transfer is exported) ----
+// The ticket is escrowed in the contract; the price must respect the type's resale policy.
+export circuit listForResale(typeId: Uint<128>, price: Uint<64>, fee: Uint<64>, payout: UserAddress): Uint<64> {
+  P_assertNotPaused();
+  const t = disclose(typeId);
+  assert(ticketTypes.member(t), "No ticket type");
+  const p = disclose(price);
+  const f = disclose(fee);
+  const tt = ticketTypes.lookup(t);
+  assert(tt.resale != ResaleMode.none, "Resale not allowed");
+  assert(tt.resale == ResaleMode.unlimited || p <= tt.maxResale, "Above max resale price");
+  checkFee(p, f);
+  MT__unsafeTransfer(left<Bytes<32>, ContractAddress>(me()),
+                     right<Bytes<32>, ContractAddress>(kernel.self()), t, 1);
+  const id = (listingCount.read() + 1) as Uint<64>;
+  listings.insert(id, Listing { seller: disclose(me()), payout: disclose(payout), typeId: t, price: p, fee: f });
+  listingCount.increment(1);
+  return id;
+}
+
+// buyResale(listingId): non-18+ types; the seller calling it on their own listing withdraws it
+// (ticket back, no payment; works while paused). buyResaleAdult(listingId, asOf): with age proof.
+circuit sellResale(listingId: Uint<64>, adultProven: Boolean): [] {
+  const l = disclose(listingId);
+  assert(listings.member(l), "No listing");
+  const li = listings.lookup(l);
+  const withdraw = !adultProven && disclose(li.seller == me());
+  if (!withdraw) {
+    P_assertNotPaused();
+    assert(adultProven || !ticketTypes.lookup(li.typeId).adultOnly, "18+ ticket type: age proof required (buyResaleAdult)");
+    pay(li.price, li.fee, li.payout);
+  }
+  MT__unsafeTransfer(right<Bytes<32>, ContractAddress>(kernel.self()),
+                     left<Bytes<32>, ContractAddress>(me()), li.typeId, 1);
+  listings.remove(l);
+}
+export circuit buyResale(listingId: Uint<64>): [] { sellResale(listingId, false); }
+export circuit buyResaleAdult(listingId: Uint<64>, asOf: Uint<64>): [] {
+  assertAdult(asOf);
+  sellResale(listingId, true);
+}
+
+// ---- Proof of holding: only "holds >= 1 ticket of this type" is checked (reusable, e.g. perks) ----
+export circuit proveHolder(typeId: Uint<128>): [] {
+  assert(disclose(MT_balanceOf(left<Bytes<32>, ContractAddress>(me()), typeId) >= 1), "Not holder");
+}
+
+// ---- Check-in: single-use entry pass (on-chain nullifier) ----
+// Burns 1 ticket of this type from the holder and records passId -> typeId.
+// A passId can be recorded only once; a burned ticket cannot be reused or resold.
+export circuit checkIn(typeId: Uint<128>, passId: Bytes<32>): [] {
+  P_assertNotPaused();
+  const t = disclose(typeId);
+  const p = disclose(passId);
+  assert(!checkIns.member(p), "Pass already used");
+  assert(disclose(MT_balanceOf(left<Bytes<32>, ContractAddress>(me()), t) >= 1), "Not holder");
+  MT__burn(left<Bytes<32>, ContractAddress>(me()), t, 1);
+  checkIns.insert(p, t);
+}
+
+export circuit balanceOf(account: Either<Bytes<32>, ContractAddress>, typeId: Uint<128>): Uint<128> {
+  return MT_balanceOf(account, typeId);
+}
+
+// ---- Platform admin: emergency pause (OZ Pausable) and trusted age issuer ----
+// One admin circuit (pause, unpause and issuer swap) to stay at 12 proving circuits (deploy fits in a block).
+// newIssuer: none = keep the current issuer.
+export circuit adminSet(paused: Boolean, newIssuer: Maybe<JubjubPoint>): [] {
+  assert(disclose(me() == admin), "Not admin");
+  const p = disclose(paused);
+  if (p != P_isPaused()) { if (p) { P__pause(); } else { P__unpause(); } }
+  if (disclose(newIssuer.is_some)) { ageIssuer = disclose(newIssuer.value); }
+}
+
+export pure circuit accountId(sk: Bytes<32>): Bytes<32> {
+  return MT_computeAccountId(sk);
+}

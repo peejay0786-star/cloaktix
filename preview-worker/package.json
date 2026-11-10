@@ -1,0 +1,11 @@
+{
+  "name": "cloaktix-preview-worker",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@midnight-ntwrk/compact-runtime": "0.21.0"
+  },
+  "overrides": {
+    "@midnightntwrk/onchain-runtime-v4": "4.0.1"
+  }
+}

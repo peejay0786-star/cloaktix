@@ -1,0 +1,299 @@
+{
+  "manifest-version": "1",
+  "compiler-version": "0.36.0",
+  "compiler-commit": "b5d9e4dfc532fe47011c4f6296e254f4853eb469",
+  "language-version": "0.28.0",
+  "runtime-version": "0.21.0",
+  "compiler": {
+    "type": "directory",
+    "contract-info.json": {
+      "type": "file",
+      "size": 40033,
+      "hash": "d4c41e342a9614fe446b67b7cb72efc270d19bbcafb145355bbb21eefeb528c9"
+    }
+  },
+  "contract": {
+    "type": "directory",
+    "index.d.ts": {
+      "type": "file",
+      "size": 19219,
+      "hash": "6dbfb219f2939917eb3d1a5d2f5318df9dcb01dc264e53334fb7e80916e296de"
+    },
+    "index.js": {
+      "type": "file",
+      "size": 431781,
+      "hash": "60919971ce09276504cc547bae257d059ae9a7e18dae7b3b0b6668f216290db4"
+    },
+    "index.js.map": {
+      "type": "file",
+      "size": 18986,
+      "hash": "2c960b794dfea3ecf3bad5996276c52c717250bb12c8ad32d2d95f088aa89f76"
+    }
+  },
+  "zkir": {
+    "type": "directory",
+    "addTicketType.bzkir": {
+      "type": "file",
+      "size": 1534,
+      "hash": "f86eb11dc76c83fccde0541e74eb1f929f4f247fa3f88775dfec1d2d139cae32"
+    },
+    "addTicketType.zkir": {
+      "type": "file",
+      "size": 5299,
+      "hash": "5f783a399581ae897ef56269042c3f0ae407edc7e4e65e6eea09b2211da7e874"
+    },
+    "adminSet.bzkir": {
+      "type": "file",
+      "size": 1298,
+      "hash": "09b031401428cda2d18229fa564a57ac276b7eb0bf07f58c9b250899595fb72e"
+    },
+    "adminSet.zkir": {
+      "type": "file",
+      "size": 3406,
+      "hash": "b219ab06c425b005789dbc0a989db798999062aab9bc88fc8fc16388585dfe24"
+    },
+    "admit.bzkir": {
+      "type": "file",
+      "size": 2209,
+      "hash": "ea950dc6f60f511cef1bdb5ddd3847b5c489f314889da50bbc25a009624ccef7"
+    },
+    "admit.zkir": {
+      "type": "file",
+      "size": 8435,
+      "hash": "fa6c6468b58af965ca93bbc8d861958fb6a90c81f0f183ea94706e2ab6b1c282"
+    },
+    "buyResale.bzkir": {
+      "type": "file",
+      "size": 8497,
+      "hash": "7ab95102876bb45fef60ad2900b88c3b3d044501a104a1c772ca4a0fb88a13c9"
+    },
+    "buyResale.zkir": {
+      "type": "file",
+      "size": 26812,
+      "hash": "5db2ef92bf4b1096f2e881d54e8858042dd08f91146cc57baadaa3780644d11f"
+    },
+    "buyResaleAdult.bzkir": {
+      "type": "file",
+      "size": 8540,
+      "hash": "9dcf02e1ea53c5c67b4c853fc2234c383133a338b6f9aa74b509e2316fc37aa2"
+    },
+    "buyResaleAdult.zkir": {
+      "type": "file",
+      "size": 28679,
+      "hash": "ff73f18940d12b441acc0d55c4327912edfb3394a16949f45e8580a0692b7af7"
+    },
+    "buyTicket.bzkir": {
+      "type": "file",
+      "size": 7662,
+      "hash": "5e137d455be3924bcf4312de45eccb93990d27d6b5fc8ede12c4b29166c8daeb"
+    },
+    "buyTicket.zkir": {
+      "type": "file",
+      "size": 24425,
+      "hash": "13e64ec37e651232119733310745720543ffa499772cdd7ed8eee70b368ace56"
+    },
+    "buyTicketAda.bzkir": {
+      "type": "file",
+      "size": 5297,
+      "hash": "0fc3efe56a40a2a3af24b1b62978df9890dc3ce0934ddea495abbc7413e3c9d3"
+    },
+    "buyTicketAda.zkir": {
+      "type": "file",
+      "size": 18924,
+      "hash": "e013879b196b83dfa63111bbed4a24a13058afd84303e1224eb0383cdeb4d1d2"
+    },
+    "buyTicketAdaAdult.bzkir": {
+      "type": "file",
+      "size": 6591,
+      "hash": "2df8b71bfa3269fdf07167d17bd00dbddbfb8ef75fad8295806a68f69caf042e"
+    },
+    "buyTicketAdaAdult.zkir": {
+      "type": "file",
+      "size": 24214,
+      "hash": "d0e129195f667bd9ef835dc10116e9c74b460a87d3c7d24f60cbcd187f46ab0b"
+    },
+    "buyTicketAdult.bzkir": {
+      "type": "file",
+      "size": 8953,
+      "hash": "eace764d1da65ac29025389525776c2dd9f497cc672e6a43283c0307614fe501"
+    },
+    "buyTicketAdult.zkir": {
+      "type": "file",
+      "size": 29712,
+      "hash": "2d34d9066138f8da9df0b7782a662f8770f60065467abc1937af2266e73749c7"
+    },
+    "createEvent.bzkir": {
+      "type": "file",
+      "size": 743,
+      "hash": "e150ba709a393969e2b7e06f459d965e4a8d4bb2977c391d07290d98c0bfc8f9"
+    },
+    "createEvent.zkir": {
+      "type": "file",
+      "size": 2728,
+      "hash": "796d564e072676ac64b4a776b83d26377497ebc9a194a69b7f6eeffda7f93038"
+    },
+    "listForResale.bzkir": {
+      "type": "file",
+      "size": 2356,
+      "hash": "230f904f34c424b67cfb7d01f9e2442463203b6978c7507a22c6ed2f6eb6e3dc"
+    },
+    "listForResale.zkir": {
+      "type": "file",
+      "size": 8444,
+      "hash": "a7e7606a35402446b410629b52093104ca126da202c01d7c393c167c04f9571c"
+    },
+    "registerAdmit.bzkir": {
+      "type": "file",
+      "size": 1396,
+      "hash": "9b20736ea78e789ff5aa977951105e94457dd202dacd9e2aa32c1118265b3ad4"
+    },
+    "registerAdmit.zkir": {
+      "type": "file",
+      "size": 4915,
+      "hash": "d454ea1c45c2ef0a56e50a61a52a6a434cde0adf6766a5f6b6dcedef2cd8083a"
+    },
+    "setSalesOpen.bzkir": {
+      "type": "file",
+      "size": 835,
+      "hash": "9fe1c31bc70e250a3f1058273187fafdecf34e99ab11eb02450776d739eee746"
+    },
+    "setSalesOpen.zkir": {
+      "type": "file",
+      "size": 3101,
+      "hash": "1108d3f76f0e52f3bc8eb70646a1d65625d8e802bd773a706b008cf4e0a8001d"
+    }
+  },
+  "keys": {
+    "type": "directory",
+    "addTicketType.prover": {
+      "type": "file",
+      "size": 11278094,
+      "hash": "2d18ff0ebf2e1d7eec3ea36dcfdf7b69e7d5b82c6823f8a14b90bf18424ae1dd"
+    },
+    "addTicketType.verifier": {
+      "type": "file",
+      "size": 2121,
+      "hash": "01dca31977d37e899bcbae8463ef25961548978d24f0b04480f8332380d4c8cb"
+    },
+    "adminSet.prover": {
+      "type": "file",
+      "size": 12326834,
+      "hash": "d0f393ef6699baf843efabefde052460ae5888346991fca5d108cf49c0f1d626"
+    },
+    "adminSet.verifier": {
+      "type": "file",
+      "size": 2313,
+      "hash": "1266007301d911366ce9d0fb944541617f0dcedcdd7e74ded081f48e59f1bea2"
+    },
+    "admit.prover": {
+      "type": "file",
+      "size": 22550961,
+      "hash": "e2c8a13363460e60fcd71c00227ec341475459403dc770706d1d40a1cbc6afe9"
+    },
+    "admit.verifier": {
+      "type": "file",
+      "size": 2121,
+      "hash": "3f8adf9e800075c2145b2375cac5bfe14d88152819468a3c84bab0c3059c1da3"
+    },
+    "buyResale.prover": {
+      "type": "file",
+      "size": 49296337,
+      "hash": "85f01bb7c43f9908c82115673655a8f3e8b9c74472422a4f4289db0b6c820046"
+    },
+    "buyResale.verifier": {
+      "type": "file",
+      "size": 2313,
+      "hash": "855f186a4449776c9e3572a2e5f5a0ddd8e3a2892c0a31a38a2b2870f704e070"
+    },
+    "buyResaleAdult.prover": {
+      "type": "file",
+      "size": 49296380,
+      "hash": "239e25a3a877753015c1081c8ba242f9db5b7d9e37a6aaf045be4e5a65a5b110"
+    },
+    "buyResaleAdult.verifier": {
+      "type": "file",
+      "size": 2313,
+      "hash": "567739a879bcbb226ebe6b3a246feadede7f03c79fc9f3ed8566907d04d3e321"
+    },
+    "buyTicket.prover": {
+      "type": "file",
+      "size": 24653966,
+      "hash": "a73843876dda4a25ea678c645f7672ae34a315674665c8cecd0be1217cee261e"
+    },
+    "buyTicket.verifier": {
+      "type": "file",
+      "size": 2313,
+      "hash": "7b187cac0b51cc6fa4083e3b4c5205f02e66f52aa02a4bbe786b17375ea3b9c6"
+    },
+    "buyTicketAda.prover": {
+      "type": "file",
+      "size": 49293137,
+      "hash": "794e0737a86c13314fec18ace232a12abf8e6133cdf00f1eba8a2de41c9d5842"
+    },
+    "buyTicketAda.verifier": {
+      "type": "file",
+      "size": 2313,
+      "hash": "997a5c46f8afd6c5f91369a12705a5b48107751f8eaea43d983c4b86cbc60647"
+    },
+    "buyTicketAdaAdult.prover": {
+      "type": "file",
+      "size": 98577503,
+      "hash": "d27edbab19a2c8918f6646a834c055389bbaff86ae419367b655caa54b2363e9"
+    },
+    "buyTicketAdaAdult.verifier": {
+      "type": "file",
+      "size": 2313,
+      "hash": "8a2ca04854e903caed01ae71ed666487b8ace451585d0ef26eae849bbd6c94d2"
+    },
+    "buyTicketAdult.prover": {
+      "type": "file",
+      "size": 49296793,
+      "hash": "4e54bf82123ec4c68d231de706c7929ac1fb24e17499271739972d04bbe06a1b"
+    },
+    "buyTicketAdult.verifier": {
+      "type": "file",
+      "size": 2313,
+      "hash": "e958504037afe36d8e4af9ee42aac5e99fc676bacc0eee3c52813071a2967355"
+    },
+    "createEvent.prover": {
+      "type": "file",
+      "size": 11277303,
+      "hash": "10654315f85bbefb2f7a465a65c674f7e54fee09a3de6f790bbd84c5897059c9"
+    },
+    "createEvent.verifier": {
+      "type": "file",
+      "size": 2121,
+      "hash": "81c951d6c61150b1b532107b87b8b4ecf7e5e3987569e47ad0f1dbbabb65427f"
+    },
+    "listForResale.prover": {
+      "type": "file",
+      "size": 11278916,
+      "hash": "39299117507bccfa3cb0d427ca83ac6506e83e245cd0f260cd1f11b2ae743732"
+    },
+    "listForResale.verifier": {
+      "type": "file",
+      "size": 2121,
+      "hash": "65341e41a55253b1a564bcd30562aacb6719c24461a99e73720826695a6a8d43"
+    },
+    "registerAdmit.prover": {
+      "type": "file",
+      "size": 11277956,
+      "hash": "c00698b2c423ad28d82c149832ba7a4a5a27ba5c3940ee34b2439f4eb23fd98a"
+    },
+    "registerAdmit.verifier": {
+      "type": "file",
+      "size": 2121,
+      "hash": "16fe6a4b1de8a4fc6425473241276939fce406e43b90e1c053a5f1a713c802ac"
+    },
+    "setSalesOpen.prover": {
+      "type": "file",
+      "size": 11277395,
+      "hash": "46a12740ac3ae3d265aff7d3ad02641dc45ba0c1faf9453264bfd7ec2440bbd4"
+    },
+    "setSalesOpen.verifier": {
+      "type": "file",
+      "size": 2121,
+      "hash": "d6274c5f2779749d2ab4f9c74260008d42fb73ae7829906cfb072a7fec623f26"
+    }
+  }
+}

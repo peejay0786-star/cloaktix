@@ -1,0 +1,564 @@
+// SPDX-License-Identifier: Apache-2.0
+// CloakTix rate-v4 LOCAL MULTIGATE SKETCH. NOT DEPLOYED.
+// NIGHT settlement and ticket lifecycle copied unchanged from v3.
+// Legacy ADA circuits retained only for source compatibility; no ADA product UI.
+// Signature: Jubjub Schnorr (same primitive as age credentials) — works on current Preview toolchain.
+// Ed25519/secp natives need Compact ≥0.35 / ledger 9 (not on Preview yet) — see plan note.
+pragma language_version >= 0.28.0;
+
+import CompactStandardLibrary;
+
+export { ContractAddress, Either, Maybe, UserAddress };
+
+witness wit_CloakSK(): Bytes<32>;
+witness wit_AgeCredential(): Maybe<AgeCredential>;
+
+export enum ResaleMode { capped, unlimited, none }
+export enum TicketStatus { owned, listed, consumed }
+
+export struct AgeClaim { holder: Bytes<32>; adultFrom: Uint<64>; }
+export struct AgeSignature { r: JubjubPoint; s: Field; }
+export struct AgeProof {
+  issuerMethod: Bytes<32>; createdAt: Uint<64>; challengeHash: Bytes<32>;
+  publicKey: JubjubPoint; signature: AgeSignature;
+}
+export struct AgeCredential { claim: AgeClaim; proof: AgeProof; }
+
+export struct EventInfo { organizer: Bytes<32>; payout: UserAddress; open: Boolean; }
+export struct TicketType {
+  eventId: Uint<64>;
+  priceUsdCents: Uint<64>;
+  supply: Uint<64>; sold: Uint<64>;
+  resale: ResaleMode; maxResaleUsdCents: Uint<64>;
+  adultOnly: Boolean;
+}
+export struct Ticket {
+  typeId: Uint<128>; owner: Bytes<32>; status: TicketStatus; epoch: Uint<64>;
+  hasAdmit: Boolean; admitCommit: Bytes<32>; listingId: Uint<64>;
+}
+// Admissions are separate so the v3 ticket/payment lifecycle stays unchanged.
+export struct GateInfo { eventId: Uint<64>; active: Boolean; typeCount: Uint<64>; }
+export struct GateTypeKey { gateId: Uint<64>; typeId: Uint<128>; }
+export struct GateStaffKey { gateId: Uint<64>; staffId: Bytes<32>; }
+export struct GateStaffInfo { gateId: Uint<64>; staffId: Bytes<32>; active: Boolean; }
+export struct Admission { gateId: Uint<64>; admittedBy: Bytes<32>; }
+export struct Listing {
+  seller: Bytes<32>; payout: UserAddress; serial: Uint<128>; typeId: Uint<128>;
+  priceUsdCents: Uint<64>;
+}
+// atomsPerUsdCent: NIGHT atoms required for one USD cent at the attested rate (ceil).
+// Domain-separated challenge binds networkTag + contractKey + rate fields + window.
+export struct RateQuote {
+  atomsPerUsdCent: Uint<64>;
+  issuedAt: Uint<64>;
+  expiresAt: Uint<64>;
+  signature: AgeSignature;
+}
+// Server-signed proof that a Cardano Preview ADA payment was verified off-chain (Koios).
+// txHash is the replay nullifier. buyer must equal me() at mint time.
+export struct AdaAttestation {
+  typeId: Uint<128>;
+  buyer: Bytes<32>;
+  txHash: Bytes<32>;
+  priceUsdCents: Uint<64>;
+  lovelacePaid: Uint<64>;
+  issuedAt: Uint<64>;
+  expiresAt: Uint<64>;
+  signature: AgeSignature;
+}
+
+export sealed ledger schemaVersion: Uint<8>;
+export sealed ledger networkTag: Bytes<32>;
+export sealed ledger feeBps: Uint<16>;
+export sealed ledger feeAddress: UserAddress;
+export sealed ledger admin: Bytes<32>;
+export ledger rateSigner: JubjubPoint;
+export sealed ledger maxQuoteAge: Uint<64>;
+export sealed ledger slippageBps: Uint<16>;
+export ledger paused: Boolean;
+export ledger events: Map<Uint<64>, EventInfo>;
+export ledger ticketTypes: Map<Uint<128>, TicketType>;
+export ledger tickets: Map<Uint<128>, Ticket>;
+export ledger listings: Map<Uint<64>, Listing>;
+export ledger eventCount: Counter;
+export ledger typeCount: Counter;
+export ledger serialCount: Counter;
+export ledger listingCount: Counter;
+export ledger gates: Map<Uint<64>, GateInfo>;
+export ledger gateCount: Counter;
+export ledger gateTypes: Map<Bytes<32>, GateTypeKey>;
+export ledger gateStaff: Map<Bytes<32>, GateStaffInfo>;
+export ledger admissions: Map<Uint<128>, Admission>;
+// Self-enrolled sticky roles prevent staff self-promotion via createEvent.
+// Organizers cannot force this role onto an arbitrary account (no delegation griefing).
+// Existing organizers retain all organizer rights even if assigned at another door.
+export ledger staffAccounts: Map<Bytes<32>, Boolean>;
+export ledger organizerAccounts: Map<Bytes<32>, Boolean>;
+export ledger ageIssuer: JubjubPoint;
+export ledger adaNullifiers: Map<Bytes<32>, Boolean>;
+export sealed ledger maxAdaAttestAge: Uint<64>;
+
+constructor(feeBps_: Uint<16>, feeAddress_: UserAddress, admin_: Bytes<32>, ageIssuer_: JubjubPoint,
+            rateSigner_: JubjubPoint, networkTag_: Bytes<32>, maxQuoteAge_: Uint<64>, slippageBps_: Uint<16>,
+            maxAdaAttestAge_: Uint<64>) {
+  assert(disclose(feeBps_) <= 10000, "feeBps > 100%");
+  assert(disclose(slippageBps_) <= 2000, "slippage too high");
+  assert(disclose(maxQuoteAge_) >= 60 && disclose(maxQuoteAge_) <= 600, "quote window out of range");
+  assert(disclose(maxAdaAttestAge_) >= 60 && disclose(maxAdaAttestAge_) <= 1800, "ADA attest window out of range");
+  feeBps = disclose(feeBps_);
+  feeAddress = disclose(feeAddress_);
+  admin = disclose(admin_);
+  ageIssuer = disclose(ageIssuer_);
+  rateSigner = disclose(rateSigner_);
+  networkTag = disclose(networkTag_);
+  maxQuoteAge = disclose(maxQuoteAge_);
+  slippageBps = disclose(slippageBps_);
+  maxAdaAttestAge = disclose(maxAdaAttestAge_);
+  schemaVersion = 4;
+  paused = false;
+}
+
+circuit me(): Bytes<32> { return persistentHash<Bytes<32>>(wit_CloakSK()); }
+circuit assertNotPaused(): [] { assert(!paused, "Paused"); }
+circuit emptyCommit(): Bytes<32> { return pad(32, ""); }
+
+circuit checkFee(p: Uint<64>, f: Uint<64>): [] {
+  const pb = p * feeBps;
+  assert(f * 10000 <= pb, "fee too high");
+  assert(pb < (f + 1) * 10000, "fee too low");
+}
+circuit pay(amount: Uint<64>, fee: Uint<64>, to: UserAddress): [] {
+  assert(amount >= fee, "fee > amount");
+  receiveUnshielded(nativeToken(), amount as Uint<128>);
+  if (fee > 0) {
+    sendUnshielded(nativeToken(), fee as Uint<128>, right<ContractAddress, UserAddress>(feeAddress));
+  }
+  if (amount > fee) {
+    sendUnshielded(nativeToken(), (amount - fee) as Uint<128>, right<ContractAddress, UserAddress>(to));
+  }
+}
+
+export pure circuit rateChallenge(atomsPerUsdCent: Uint<64>, issuedAt: Uint<64>, expiresAt: Uint<64>,
+                                  networkTag_: Bytes<32>, contractKey: Bytes<32>, r: JubjubPoint): Field {
+  const body = persistentHash<Vector<5, Bytes<32>>>([
+    pad(32, "cloaktix:rate:v1"),
+    upgradeFromTransient(transientHash<Uint<64>>(atomsPerUsdCent)),
+    upgradeFromTransient(transientHash<Uint<64>>(issuedAt)),
+    upgradeFromTransient(transientHash<Uint<64>>(expiresAt)),
+    networkTag_]);
+  return degradeToTransient(persistentHash<Vector<3, Bytes<32>>>([
+    body, contractKey, upgradeFromTransient(transientHash<Vector<2, Field>>([jubjubPointX(r), jubjubPointY(r)]))]));
+}
+
+circuit contractKey(): Bytes<32> {
+  return persistentHash<ContractAddress>(kernel.self());
+}
+
+// No division in Compact: paid*10000 >= required*(10000-slippageBps).
+circuit assertCoversUsd(usdCents: Uint<64>, atomsPerUsdCent: Uint<64>, paid: Uint<64>): [] {
+  const required = usdCents * atomsPerUsdCent;
+  const keep = (10000 as Uint<64>) - (slippageBps as Uint<64>);
+  assert(paid * 10000 >= required * keep, "NIGHT payment below USD quote");
+}
+
+circuit assertFreshQuote(q: RateQuote, now: Uint<64>): [] {
+  const issued = disclose(q.issuedAt);
+  const exp = disclose(q.expiresAt);
+  const t = disclose(now);
+  assert(exp > issued, "quote window inverted");
+  assert(exp - issued <= maxQuoteAge, "quote window too long");
+  assert(t >= issued, "quote from the future");
+  assert(t <= exp, "quote expired");
+}
+
+circuit assertValidRateQuote(q: RateQuote, now: Uint<64>): [] {
+  assertFreshQuote(q, now);
+  const atoms = disclose(q.atomsPerUsdCent);
+  assert(atoms > 0, "zero rate");
+  const r = disclose(q.signature.r);
+  const s = disclose(q.signature.s);
+  const ch = rateChallenge(atoms, disclose(q.issuedAt), disclose(q.expiresAt), networkTag, contractKey(), r);
+  assert(disclose(ecMulGenerator(s as JubjubScalar) == ecAdd(r, ecMul(rateSigner, ch as JubjubScalar))), "Invalid rate quote signature");
+}
+
+circuit settleUsd(usdCents: Uint<64>, nightPaid: Uint<64>, fee: Uint<64>, to: UserAddress, q: RateQuote, now: Uint<64>): [] {
+  assertValidRateQuote(q, now);
+  const paid = disclose(nightPaid);
+  const f = disclose(fee);
+  checkFee(paid, f);
+  assertCoversUsd(disclose(usdCents), disclose(q.atomsPerUsdCent), paid);
+  pay(paid, f, to);
+}
+
+export pure circuit ageChallenge(claim: AgeClaim, issuerMethod: Bytes<32>, createdAt: Uint<64>,
+                                 challengeHash: Bytes<32>, publicKey: JubjubPoint, r: JubjubPoint): Field {
+  const body = persistentHash<AgeClaim>(claim);
+  const payload = persistentHash<Vector<5, Bytes<32>>>([body, pad(32, "midnight:vc:issuance"), issuerMethod,
+    upgradeFromTransient(transientHash<Uint<64>>(createdAt)), challengeHash]);
+  return degradeToTransient(persistentHash<Vector<3, Bytes<32>>>([payload,
+    upgradeFromTransient(transientHash<Vector<2, Field>>([jubjubPointX(publicKey), jubjubPointY(publicKey)])), upgradeFromTransient(transientHash<Vector<2, Field>>([jubjubPointX(r), jubjubPointY(r)]))]));
+}
+
+circuit assertAdult(asOf: Uint<64>): [] {
+  const m = wit_AgeCredential();
+  assert(disclose(m.is_some), "No age credential");
+  const c = disclose(m.value);
+  assert(disclose(c.claim.holder == me()), "Age credential not for this identity");
+  assert(disclose(c.claim.adultFrom <= asOf), "Under 18");
+  assert(disclose(c.proof.publicKey == ageIssuer), "Untrusted age issuer");
+  const ch = ageChallenge(c.claim, c.proof.issuerMethod, c.proof.createdAt, c.proof.challengeHash, c.proof.publicKey, c.proof.signature.r);
+  assert(disclose(ecMulGenerator(c.proof.signature.s as JubjubScalar) == ecAdd(c.proof.signature.r, ecMul(c.proof.publicKey, ch as JubjubScalar))),
+         "Invalid age credential signature");
+}
+
+export circuit createEvent(payout: UserAddress): Uint<64> {
+  assertNotPaused();
+  const caller = disclose(me());
+  assert(!staffAccounts.member(caller) || organizerAccounts.member(caller), "Staff cannot create events");
+  organizerAccounts.insert(caller, true);
+  const id = (eventCount.read() + 1) as Uint<64>;
+  events.insert(id, EventInfo { organizer: disclose(me()), payout: disclose(payout), open: true });
+  eventCount.increment(1);
+  return id;
+}
+
+export circuit addTicketType(eventId: Uint<64>, priceUsdCents: Uint<64>, supply: Uint<64>,
+                             resale: ResaleMode, maxResaleUsdCents: Uint<64>, adultOnly: Boolean): Uint<128> {
+  assertNotPaused();
+  const e = disclose(eventId);
+  assert(events.member(e), "No event");
+  assert(disclose(events.lookup(e).organizer == me()), "Not organizer");
+  const cents = disclose(priceUsdCents);
+  assert(cents > 0, "zero USD price");
+  const id = (typeCount.read() + 1) as Uint<128>;
+  ticketTypes.insert(id, TicketType {
+    eventId: e, priceUsdCents: cents, supply: disclose(supply), sold: 0, resale: disclose(resale),
+    maxResaleUsdCents: disclose(resale) == ResaleMode.capped ? disclose(maxResaleUsdCents) : 0,
+    adultOnly: disclose(adultOnly) });
+  typeCount.increment(1);
+  return id;
+}
+
+export circuit setSalesOpen(eventId: Uint<64>, open: Boolean): [] {
+  const e = disclose(eventId);
+  assert(events.member(e), "No event");
+  const ev = events.lookup(e);
+  assert(disclose(ev.organizer == me()), "Not organizer");
+  events.insert(e, EventInfo { organizer: ev.organizer, payout: ev.payout, open: disclose(open) });
+}
+
+circuit mintOwned(typeId: Uint<128>, admitCommit: Bytes<32>, nightPaid: Uint<64>, fee: Uint<64>, q: RateQuote, now: Uint<64>): Uint<128> {
+  const t = disclose(typeId);
+  assert(ticketTypes.member(t), "No ticket type");
+  const tt = ticketTypes.lookup(t);
+  const ev = events.lookup(tt.eventId);
+  assert(ev.open, "Sales closed");
+  assert(tt.sold < tt.supply, "Sold out");
+  settleUsd(tt.priceUsdCents, nightPaid, fee, ev.payout, q, now);
+  const serial = (serialCount.read() + 1) as Uint<128>;
+  serialCount.increment(1);
+  const commit = disclose(admitCommit);
+  const has = commit != emptyCommit();
+  tickets.insert(serial, Ticket {
+    typeId: t, owner: disclose(me()), status: TicketStatus.owned, epoch: 1,
+    hasAdmit: has, admitCommit: commit, listingId: 0 });
+  ticketTypes.insert(t, TicketType {
+    eventId: tt.eventId, priceUsdCents: tt.priceUsdCents, supply: tt.supply,
+    sold: (tt.sold + 1) as Uint<64>, resale: tt.resale, maxResaleUsdCents: tt.maxResaleUsdCents, adultOnly: tt.adultOnly });
+  return serial;
+}
+
+circuit sellPrimary(typeId: Uint<128>, admitCommit: Bytes<32>, nightPaid: Uint<64>, fee: Uint<64>,
+                    q: RateQuote, now: Uint<64>, adultProven: Boolean): Uint<128> {
+  assertNotPaused();
+  const t = disclose(typeId);
+  assert(ticketTypes.member(t), "No ticket type");
+  assert(adultProven || !ticketTypes.lookup(t).adultOnly, "18+ ticket type: age proof required");
+  return mintOwned(t, admitCommit, nightPaid, fee, q, now);
+}
+
+export circuit buyTicket(typeId: Uint<128>, admitCommit: Bytes<32>, nightPaid: Uint<64>, fee: Uint<64>,
+                         q: RateQuote, now: Uint<64>): Uint<128> {
+  return sellPrimary(typeId, admitCommit, nightPaid, fee, q, now, false);
+}
+export circuit buyTicketAdult(typeId: Uint<128>, admitCommit: Bytes<32>, nightPaid: Uint<64>, fee: Uint<64>,
+                              q: RateQuote, now: Uint<64>, asOf: Uint<64>): Uint<128> {
+  assertAdult(asOf);
+  return sellPrimary(typeId, admitCommit, nightPaid, fee, q, now, true);
+}
+
+export circuit registerAdmit(serial: Uint<128>, commit: Bytes<32>): [] {
+  assertNotPaused();
+  const s = disclose(serial);
+  assert(tickets.member(s), "No ticket");
+  const tk = tickets.lookup(s);
+  assert(tk.status == TicketStatus.owned, "Not owned");
+  assert(disclose(tk.owner == me()), "Not ticket owner");
+  const c = disclose(commit);
+  const clearing = c == emptyCommit();
+  tickets.insert(s, Ticket {
+    typeId: tk.typeId, owner: tk.owner, status: tk.status, epoch: tk.epoch,
+    hasAdmit: !clearing, admitCommit: clearing ? emptyCommit() : c, listingId: 0 });
+}
+
+export circuit listForResale(serial: Uint<128>, priceUsdCents: Uint<64>, payout: UserAddress): Uint<64> {
+  assertNotPaused();
+  const s = disclose(serial);
+  assert(tickets.member(s), "No ticket");
+  const tk = tickets.lookup(s);
+  assert(tk.status == TicketStatus.owned, "Not owned");
+  assert(disclose(tk.owner == me()), "Not ticket owner");
+  const tt = ticketTypes.lookup(tk.typeId);
+  assert(tt.resale != ResaleMode.none, "Resale not allowed");
+  const cents = disclose(priceUsdCents);
+  assert(cents > 0, "zero USD resale");
+  assert(tt.resale == ResaleMode.unlimited || cents <= tt.maxResaleUsdCents, "Above max resale USD");
+  const id = (listingCount.read() + 1) as Uint<64>;
+  listingCount.increment(1);
+  const newEpoch = (tk.epoch + 1) as Uint<64>;
+  tickets.insert(s, Ticket {
+    typeId: tk.typeId, owner: tk.owner, status: TicketStatus.listed, epoch: newEpoch,
+    hasAdmit: false, admitCommit: emptyCommit(), listingId: id });
+  listings.insert(id, Listing {
+    seller: disclose(me()), payout: disclose(payout), serial: s, typeId: tk.typeId, priceUsdCents: cents });
+  return id;
+}
+
+circuit sellResale(listingId: Uint<64>, nightPaid: Uint<64>, fee: Uint<64>, q: RateQuote, now: Uint<64>, adultProven: Boolean): [] {
+  const l = disclose(listingId);
+  assert(listings.member(l), "No listing");
+  const li = listings.lookup(l);
+  const s = li.serial;
+  assert(tickets.member(s), "No ticket");
+  const tk = tickets.lookup(s);
+  assert(tk.status == TicketStatus.listed, "Not listed");
+  assert(tk.listingId == l, "Listing mismatch");
+  const withdraw = !adultProven && disclose(li.seller == me());
+  if (!withdraw) {
+    assertNotPaused();
+    assert(adultProven || !ticketTypes.lookup(li.typeId).adultOnly, "18+ ticket type: age proof required");
+    settleUsd(li.priceUsdCents, nightPaid, fee, li.payout, q, now);
+  }
+  const newOwner = disclose(me());
+  const newEpoch = (tk.epoch + 1) as Uint<64>;
+  tickets.insert(s, Ticket {
+    typeId: tk.typeId, owner: newOwner, status: TicketStatus.owned, epoch: newEpoch,
+    hasAdmit: false, admitCommit: emptyCommit(), listingId: 0 });
+  listings.remove(l);
+}
+
+export circuit buyResale(listingId: Uint<64>, nightPaid: Uint<64>, fee: Uint<64>, q: RateQuote, now: Uint<64>): [] {
+  sellResale(listingId, nightPaid, fee, q, now, false);
+}
+export circuit buyResaleAdult(listingId: Uint<64>, nightPaid: Uint<64>, fee: Uint<64>, q: RateQuote, now: Uint<64>, asOf: Uint<64>): [] {
+  assertAdult(asOf);
+  sellResale(listingId, nightPaid, fee, q, now, true);
+}
+
+export struct AdmitMaterial {
+  tag: Bytes<32>; networkTag: Bytes<32>; contractKey: Bytes<32>;
+  serial: Uint<128>; epoch: Uint<64>; nonce: Bytes<32>;
+}
+
+circuit admitCommitFor(serial: Uint<128>, epoch: Uint<64>, nonce: Bytes<32>): Bytes<32> {
+  return persistentHash<AdmitMaterial>(AdmitMaterial {
+    tag: pad(32, "cloaktix:admit:v2"), networkTag: networkTag, contractKey: contractKey(),
+    serial: serial, epoch: epoch, nonce: nonce });
+}
+
+export pure circuit contractKeyOf(addr: ContractAddress): Bytes<32> {
+  return persistentHash<ContractAddress>(addr);
+}
+export pure circuit admitCommitOf(networkTag_: Bytes<32>, contractKey_: Bytes<32>,
+                                  serial: Uint<128>, epoch: Uint<64>, nonce: Bytes<32>): Bytes<32> {
+  return persistentHash<AdmitMaterial>(AdmitMaterial {
+    tag: pad(32, "cloaktix:admit:v2"), networkTag: networkTag_, contractKey: contractKey_,
+    serial: serial, epoch: epoch, nonce: nonce });
+}
+export pure circuit accountId(sk: Bytes<32>): Bytes<32> {
+  return persistentHash<Bytes<32>>(sk);
+}
+
+export pure circuit gateTypeKey(gateId: Uint<64>, typeId: Uint<128>): Bytes<32> {
+  return persistentHash<GateTypeKey>(GateTypeKey { gateId: gateId, typeId: typeId });
+}
+export pure circuit gateStaffKey(gateId: Uint<64>, staffId: Bytes<32>): Bytes<32> {
+  return persistentHash<GateStaffKey>(GateStaffKey { gateId: gateId, staffId: staffId });
+}
+circuit assertGateOrganizer(gateId: Uint<64>): GateInfo {
+  assert(gates.member(gateId), "No door");
+  const gate = gates.lookup(gateId);
+  assert(disclose(events.lookup(gate.eventId).organizer == me()), "Not organizer");
+  return gate;
+}
+export circuit addGate(eventId: Uint<64>): Uint<64> {
+  assertNotPaused();
+  const e = disclose(eventId);
+  assert(events.member(e), "No event");
+  assert(disclose(events.lookup(e).organizer == me()), "Not organizer");
+  const id = (gateCount.read() + 1) as Uint<64>;
+  gateCount.increment(1);
+  gates.insert(id, GateInfo { eventId: e, active: true, typeCount: 0 });
+  return id;
+}
+export circuit setGateActive(gateId: Uint<64>, active: Boolean): [] {
+  const g = disclose(gateId);
+  const gate = assertGateOrganizer(g);
+  gates.insert(g, GateInfo { eventId: gate.eventId, active: disclose(active), typeCount: gate.typeCount });
+}
+export circuit setGateType(gateId: Uint<64>, typeId: Uint<128>, allowed: Boolean): [] {
+  const g = disclose(gateId);
+  const t = disclose(typeId);
+  const gate = assertGateOrganizer(g);
+  assert(ticketTypes.member(t), "No ticket type");
+  assert(ticketTypes.lookup(t).eventId == gate.eventId, "Wrong event for door");
+  const key = gateTypeKey(g, t);
+  const exists = gateTypes.member(key);
+  if (disclose(allowed)) {
+    if (!exists) {
+      gateTypes.insert(key, GateTypeKey { gateId: g, typeId: t });
+      gates.insert(g, GateInfo { eventId: gate.eventId, active: gate.active, typeCount: (gate.typeCount + 1) as Uint<64> });
+    }
+  } else {
+    if (exists) {
+      gateTypes.remove(key);
+      gates.insert(g, GateInfo { eventId: gate.eventId, active: gate.active, typeCount: (gate.typeCount - 1) as Uint<64> });
+    }
+  }
+}
+// Staff consent is explicit: an organizer must not be able to permanently demote another user.
+export circuit registerStaff(): [] {
+  staffAccounts.insert(disclose(me()), true);
+}
+export circuit addGateStaff(gateId: Uint<64>, staffId: Bytes<32>): [] {
+  const g = disclose(gateId);
+  assertGateOrganizer(g);
+  const staff = disclose(staffId);
+  assert(staff != emptyCommit(), "Empty staff ID");
+  assert(staffAccounts.member(staff) || organizerAccounts.member(staff), "Staff must enable staff mode first");
+  gateStaff.insert(gateStaffKey(g, staff), GateStaffInfo { gateId: g, staffId: staff, active: true });
+}
+export circuit revokeGateStaff(gateId: Uint<64>, staffId: Bytes<32>): [] {
+  const g = disclose(gateId);
+  assertGateOrganizer(g);
+  const staff = disclose(staffId);
+  gateStaff.insert(gateStaffKey(g, staff), GateStaffInfo { gateId: g, staffId: staff, active: false });
+}
+export circuit admit(serial: Uint<128>, nonce: Bytes<32>, gateId: Uint<64>): [] {
+  assertNotPaused();
+  const s = disclose(serial);
+  assert(tickets.member(s), "No ticket");
+  const tk = tickets.lookup(s);
+  assert(tk.status == TicketStatus.owned, "Already used or not owned");
+  assert(tk.hasAdmit, "No admit registered");
+  const tt = ticketTypes.lookup(tk.typeId);
+  const g = disclose(gateId);
+  assert(gates.member(g), "No door");
+  const gate = gates.lookup(g);
+  assert(gate.active, "Door inactive");
+  assert(gate.eventId == tt.eventId, "Wrong event for door");
+  const ev = events.lookup(tt.eventId);
+  const caller = disclose(me());
+  const staffKey = gateStaffKey(g, caller);
+  if (caller != ev.organizer) {
+    assert(gateStaff.member(staffKey), "Unauthorized staff");
+    assert(gateStaff.lookup(staffKey).active, "Revoked staff");
+  }
+  assert(gate.typeCount == 0 || gateTypes.member(gateTypeKey(g, tk.typeId)), "Wrong ticket type for door");
+  const n = disclose(nonce);
+  assert(disclose(tk.admitCommit == admitCommitFor(s, tk.epoch, n)), "Replaced copy or bad QR");
+  tickets.insert(s, Ticket {
+    typeId: tk.typeId, owner: tk.owner, status: TicketStatus.consumed, epoch: tk.epoch,
+    hasAdmit: false, admitCommit: emptyCommit(), listingId: 0 });
+  admissions.insert(s, Admission { gateId: g, admittedBy: caller });
+}
+
+
+export pure circuit adaAttestChallenge(typeId: Uint<128>, buyer: Bytes<32>, txHash: Bytes<32>,
+                                       priceUsdCents: Uint<64>, lovelacePaid: Uint<64>,
+                                       issuedAt: Uint<64>, expiresAt: Uint<64>,
+                                       networkTag_: Bytes<32>, contractKey: Bytes<32>, r: JubjubPoint): Field {
+  const body = persistentHash<Vector<8, Bytes<32>>>([
+    pad(32, "cloaktix:ada-attest:v1"),
+    upgradeFromTransient(transientHash<Uint<128>>(typeId)),
+    buyer,
+    txHash,
+    upgradeFromTransient(transientHash<Uint<64>>(priceUsdCents)),
+    upgradeFromTransient(transientHash<Uint<64>>(lovelacePaid)),
+    upgradeFromTransient(transientHash<Uint<64>>(issuedAt)),
+    upgradeFromTransient(transientHash<Uint<64>>(expiresAt))]);
+  return degradeToTransient(persistentHash<Vector<4, Bytes<32>>>([
+    body, networkTag_, contractKey, upgradeFromTransient(transientHash<Vector<2, Field>>([jubjubPointX(r), jubjubPointY(r)]))]));
+}
+
+circuit assertFreshAdaAttest(a: AdaAttestation, now: Uint<64>): [] {
+  const issued = disclose(a.issuedAt);
+  const exp = disclose(a.expiresAt);
+  const t = disclose(now);
+  assert(exp > issued, "ADA attest window inverted");
+  assert(exp - issued <= maxAdaAttestAge, "ADA attest window too long");
+  assert(t >= issued, "ADA attest from the future");
+  assert(t <= exp, "ADA attest expired");
+}
+
+circuit assertValidAdaAttestation(a: AdaAttestation, typeId: Uint<128>, priceUsdCents: Uint<64>, now: Uint<64>): [] {
+  assertFreshAdaAttest(a, now);
+  assert(disclose(a.typeId == typeId), "ADA attest type mismatch");
+  assert(disclose(a.priceUsdCents == priceUsdCents), "ADA attest price mismatch");
+  assert(disclose(a.buyer == me()), "ADA attest buyer mismatch");
+  assert(disclose(a.lovelacePaid) > 0, "ADA attest zero lovelace");
+  const tx = disclose(a.txHash);
+  assert(tx != emptyCommit(), "ADA attest empty txHash");
+  assert(!adaNullifiers.member(tx), "ADA payment already used");
+  const r = disclose(a.signature.r);
+  const s = disclose(a.signature.s);
+  const ch = adaAttestChallenge(
+    disclose(a.typeId), disclose(a.buyer), tx, disclose(a.priceUsdCents), disclose(a.lovelacePaid),
+    disclose(a.issuedAt), disclose(a.expiresAt), networkTag, contractKey(), r);
+  assert(disclose(ecMulGenerator(s as JubjubScalar) == ecAdd(r, ecMul(rateSigner, ch as JubjubScalar))), "Invalid ADA attestation signature");
+  adaNullifiers.insert(tx, true);
+}
+
+circuit mintOwnedAda(typeId: Uint<128>, admitCommit: Bytes<32>, a: AdaAttestation, now: Uint<64>): Uint<128> {
+  const t = disclose(typeId);
+  assert(ticketTypes.member(t), "No ticket type");
+  const tt = ticketTypes.lookup(t);
+  const ev = events.lookup(tt.eventId);
+  assert(ev.open, "Sales closed");
+  assert(tt.sold < tt.supply, "Sold out");
+  assertValidAdaAttestation(a, t, tt.priceUsdCents, now);
+  const serial = (serialCount.read() + 1) as Uint<128>;
+  serialCount.increment(1);
+  const commit = disclose(admitCommit);
+  const has = commit != emptyCommit();
+  tickets.insert(serial, Ticket {
+    typeId: t, owner: disclose(me()), status: TicketStatus.owned, epoch: 1,
+    hasAdmit: has, admitCommit: commit, listingId: 0 });
+  ticketTypes.insert(t, TicketType {
+    eventId: tt.eventId, priceUsdCents: tt.priceUsdCents, supply: tt.supply,
+    sold: (tt.sold + 1) as Uint<64>, resale: tt.resale, maxResaleUsdCents: tt.maxResaleUsdCents, adultOnly: tt.adultOnly });
+  return serial;
+}
+
+circuit sellPrimaryAda(typeId: Uint<128>, admitCommit: Bytes<32>, a: AdaAttestation, now: Uint<64>, adultProven: Boolean): Uint<128> {
+  assertNotPaused();
+  const t = disclose(typeId);
+  assert(ticketTypes.member(t), "No ticket type");
+  assert(adultProven || !ticketTypes.lookup(t).adultOnly, "18+ ticket type: age proof required");
+  return mintOwnedAda(t, admitCommit, a, now);
+}
+
+export circuit buyTicketAda(typeId: Uint<128>, admitCommit: Bytes<32>, a: AdaAttestation, now: Uint<64>): Uint<128> {
+  return sellPrimaryAda(typeId, admitCommit, a, now, false);
+}
+export circuit buyTicketAdaAdult(typeId: Uint<128>, admitCommit: Bytes<32>, a: AdaAttestation, now: Uint<64>, asOf: Uint<64>): Uint<128> {
+  assertAdult(asOf);
+  return sellPrimaryAda(typeId, admitCommit, a, now, true);
+}
+
+export circuit adminSet(paused_: Boolean, newIssuer: Maybe<JubjubPoint>, newRateSigner: Maybe<JubjubPoint>): [] {
+  assert(disclose(me() == admin), "Not admin");
+  paused = disclose(paused_);
+  if (disclose(newIssuer.is_some)) { ageIssuer = disclose(newIssuer.value); }
+  if (disclose(newRateSigner.is_some)) { rateSigner = disclose(newRateSigner.value); }
+}

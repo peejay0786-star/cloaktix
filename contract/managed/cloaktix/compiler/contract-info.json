@@ -1,0 +1,1078 @@
+{
+  "compiler-version": "0.36.0",
+  "compiler-commit": "b5d9e4dfc532fe47011c4f6296e254f4853eb469",
+  "language-version": "0.28.0",
+  "runtime-version": "0.21.0",
+  "circuits": [
+    {
+      "name": "ageChallenge",
+      "pure": true,
+      "proof": false,
+      "arguments": [
+        {
+          "name": "claim",
+          "type": {
+            "type-name": "Struct",
+            "name": "AgeClaim",
+            "elements": [
+              {
+                "name": "holder",
+                "type": {
+                  "type-name": "Bytes",
+                  "length": 32
+                }
+              },
+              {
+                "name": "adultFrom",
+                "type": {
+                  "type-name": "Uint",
+                  "maxval": 18446744073709551615
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "issuerMethod",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "createdAt",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 18446744073709551615
+          }
+        },
+        {
+          "name": "challengeHash",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "publicKey",
+          "type": {
+            "type-name": "JubjubPoint"
+          }
+        },
+        {
+          "name": "r",
+          "type": {
+            "type-name": "JubjubPoint"
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Field"
+      }
+    },
+    {
+      "name": "createEvent",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "payout",
+          "type": {
+            "type-name": "Struct",
+            "name": "UserAddress",
+            "elements": [
+              {
+                "name": "bytes",
+                "type": {
+                  "type-name": "Bytes",
+                  "length": 32
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Uint",
+        "maxval": 18446744073709551615
+      }
+    },
+    {
+      "name": "addTicketType",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "eventId",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 18446744073709551615
+          }
+        },
+        {
+          "name": "price",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 18446744073709551615
+          }
+        },
+        {
+          "name": "fee",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 18446744073709551615
+          }
+        },
+        {
+          "name": "supply",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 18446744073709551615
+          }
+        },
+        {
+          "name": "resale",
+          "type": {
+            "type-name": "Enum",
+            "name": "ResaleMode",
+            "elements": [
+              "capped",
+              "unlimited",
+              "none"
+            ]
+          }
+        },
+        {
+          "name": "maxResale",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 18446744073709551615
+          }
+        },
+        {
+          "name": "adultOnly",
+          "type": {
+            "type-name": "Boolean"
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Uint",
+        "maxval": 340282366920938463463374607431768211455
+      }
+    },
+    {
+      "name": "setSalesOpen",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "eventId",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 18446744073709551615
+          }
+        },
+        {
+          "name": "open",
+          "type": {
+            "type-name": "Boolean"
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    },
+    {
+      "name": "buyTicket",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "typeId",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 340282366920938463463374607431768211455
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    },
+    {
+      "name": "buyTicketAdult",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "typeId",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 340282366920938463463374607431768211455
+          }
+        },
+        {
+          "name": "asOf",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 18446744073709551615
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    },
+    {
+      "name": "listForResale",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "typeId",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 340282366920938463463374607431768211455
+          }
+        },
+        {
+          "name": "price",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 18446744073709551615
+          }
+        },
+        {
+          "name": "fee",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 18446744073709551615
+          }
+        },
+        {
+          "name": "payout",
+          "type": {
+            "type-name": "Struct",
+            "name": "UserAddress",
+            "elements": [
+              {
+                "name": "bytes",
+                "type": {
+                  "type-name": "Bytes",
+                  "length": 32
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Uint",
+        "maxval": 18446744073709551615
+      }
+    },
+    {
+      "name": "buyResale",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "listingId",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 18446744073709551615
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    },
+    {
+      "name": "buyResaleAdult",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "listingId",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 18446744073709551615
+          }
+        },
+        {
+          "name": "asOf",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 18446744073709551615
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    },
+    {
+      "name": "proveHolder",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "typeId",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 340282366920938463463374607431768211455
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    },
+    {
+      "name": "checkIn",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "typeId",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 340282366920938463463374607431768211455
+          }
+        },
+        {
+          "name": "passId",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    },
+    {
+      "name": "balanceOf",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "account",
+          "type": {
+            "type-name": "Struct",
+            "name": "Either",
+            "elements": [
+              {
+                "name": "is_left",
+                "type": {
+                  "type-name": "Boolean"
+                }
+              },
+              {
+                "name": "left",
+                "type": {
+                  "type-name": "Bytes",
+                  "length": 32
+                }
+              },
+              {
+                "name": "right",
+                "type": {
+                  "type-name": "Struct",
+                  "name": "ContractAddress",
+                  "elements": [
+                    {
+                      "name": "bytes",
+                      "type": {
+                        "type-name": "Bytes",
+                        "length": 32
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "typeId",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 340282366920938463463374607431768211455
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Uint",
+        "maxval": 340282366920938463463374607431768211455
+      }
+    },
+    {
+      "name": "adminSet",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "paused",
+          "type": {
+            "type-name": "Boolean"
+          }
+        },
+        {
+          "name": "newIssuer",
+          "type": {
+            "type-name": "Struct",
+            "name": "Maybe",
+            "elements": [
+              {
+                "name": "is_some",
+                "type": {
+                  "type-name": "Boolean"
+                }
+              },
+              {
+                "name": "value",
+                "type": {
+                  "type-name": "JubjubPoint"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    },
+    {
+      "name": "accountId",
+      "pure": true,
+      "proof": false,
+      "arguments": [
+        {
+          "name": "sk",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    }
+  ],
+  "witnesses": [
+    {
+      "name": "wit_CloakSK",
+      "arguments": [
+      ],
+      "result type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "wit_AgeCredential",
+      "arguments": [
+      ],
+      "result type": {
+        "type-name": "Struct",
+        "name": "Maybe",
+        "elements": [
+          {
+            "name": "is_some",
+            "type": {
+              "type-name": "Boolean"
+            }
+          },
+          {
+            "name": "value",
+            "type": {
+              "type-name": "Struct",
+              "name": "AgeCredential",
+              "elements": [
+                {
+                  "name": "claim",
+                  "type": {
+                    "type-name": "Struct",
+                    "name": "AgeClaim",
+                    "elements": [
+                      {
+                        "name": "holder",
+                        "type": {
+                          "type-name": "Bytes",
+                          "length": 32
+                        }
+                      },
+                      {
+                        "name": "adultFrom",
+                        "type": {
+                          "type-name": "Uint",
+                          "maxval": 18446744073709551615
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "proof",
+                  "type": {
+                    "type-name": "Struct",
+                    "name": "AgeProof",
+                    "elements": [
+                      {
+                        "name": "issuerMethod",
+                        "type": {
+                          "type-name": "Bytes",
+                          "length": 32
+                        }
+                      },
+                      {
+                        "name": "createdAt",
+                        "type": {
+                          "type-name": "Uint",
+                          "maxval": 18446744073709551615
+                        }
+                      },
+                      {
+                        "name": "challengeHash",
+                        "type": {
+                          "type-name": "Bytes",
+                          "length": 32
+                        }
+                      },
+                      {
+                        "name": "publicKey",
+                        "type": {
+                          "type-name": "JubjubPoint"
+                        }
+                      },
+                      {
+                        "name": "signature",
+                        "type": {
+                          "type-name": "Struct",
+                          "name": "AgeSignature",
+                          "elements": [
+                            {
+                              "name": "r",
+                              "type": {
+                                "type-name": "JubjubPoint"
+                              }
+                            },
+                            {
+                              "name": "s",
+                              "type": {
+                                "type-name": "Field"
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "contracts": [
+  ],
+  "ledger": [
+    {
+      "name": "_balances",
+      "index": [
+        0,
+        0
+      ],
+      "exported": false,
+      "storage": "Map",
+      "key": {
+        "type-name": "Uint",
+        "maxval": 340282366920938463463374607431768211455
+      },
+      "value": {
+        "type-name": "Map",
+        "key": {
+          "type-name": "Struct",
+          "name": "Either",
+          "elements": [
+            {
+              "name": "is_left",
+              "type": {
+                "type-name": "Boolean"
+              }
+            },
+            {
+              "name": "left",
+              "type": {
+                "type-name": "Bytes",
+                "length": 32
+              }
+            },
+            {
+              "name": "right",
+              "type": {
+                "type-name": "Struct",
+                "name": "ContractAddress",
+                "elements": [
+                  {
+                    "name": "bytes",
+                    "type": {
+                      "type-name": "Bytes",
+                      "length": 32
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "value": {
+          "type-name": "Uint",
+          "maxval": 340282366920938463463374607431768211455
+        }
+      }
+    },
+    {
+      "name": "_operatorApprovals",
+      "index": [
+        1,
+        0
+      ],
+      "exported": false,
+      "storage": "Map",
+      "key": {
+        "type-name": "Struct",
+        "name": "Either",
+        "elements": [
+          {
+            "name": "is_left",
+            "type": {
+              "type-name": "Boolean"
+            }
+          },
+          {
+            "name": "left",
+            "type": {
+              "type-name": "Bytes",
+              "length": 32
+            }
+          },
+          {
+            "name": "right",
+            "type": {
+              "type-name": "Struct",
+              "name": "ContractAddress",
+              "elements": [
+                {
+                  "name": "bytes",
+                  "type": {
+                    "type-name": "Bytes",
+                    "length": 32
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "value": {
+        "type-name": "Map",
+        "key": {
+          "type-name": "Struct",
+          "name": "Either",
+          "elements": [
+            {
+              "name": "is_left",
+              "type": {
+                "type-name": "Boolean"
+              }
+            },
+            {
+              "name": "left",
+              "type": {
+                "type-name": "Bytes",
+                "length": 32
+              }
+            },
+            {
+              "name": "right",
+              "type": {
+                "type-name": "Struct",
+                "name": "ContractAddress",
+                "elements": [
+                  {
+                    "name": "bytes",
+                    "type": {
+                      "type-name": "Bytes",
+                      "length": 32
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "value": {
+          "type-name": "Boolean"
+        }
+      }
+    },
+    {
+      "name": "_uri",
+      "index": [
+        1,
+        1
+      ],
+      "exported": false,
+      "storage": "Cell",
+      "type": {
+        "type-name": "Opaque",
+        "tsType": "string"
+      }
+    },
+    {
+      "name": "_isInitialized",
+      "index": [
+        1,
+        2
+      ],
+      "exported": false,
+      "storage": "Cell",
+      "type": {
+        "type-name": "Boolean"
+      }
+    },
+    {
+      "name": "_isPaused",
+      "index": [
+        1,
+        3
+      ],
+      "exported": false,
+      "storage": "Cell",
+      "type": {
+        "type-name": "Boolean"
+      }
+    },
+    {
+      "name": "feeBps",
+      "index": [
+        1,
+        4
+      ],
+      "exported": true,
+      "storage": "Cell",
+      "type": {
+        "type-name": "Uint",
+        "maxval": 65535
+      }
+    },
+    {
+      "name": "feeAddress",
+      "index": [
+        1,
+        5
+      ],
+      "exported": true,
+      "storage": "Cell",
+      "type": {
+        "type-name": "Struct",
+        "name": "UserAddress",
+        "elements": [
+          {
+            "name": "bytes",
+            "type": {
+              "type-name": "Bytes",
+              "length": 32
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "admin",
+      "index": [
+        1,
+        6
+      ],
+      "exported": true,
+      "storage": "Cell",
+      "type": {
+        "type-name": "Bytes",
+        "length": 32
+      }
+    },
+    {
+      "name": "events",
+      "index": [
+        1,
+        7
+      ],
+      "exported": true,
+      "storage": "Map",
+      "key": {
+        "type-name": "Uint",
+        "maxval": 18446744073709551615
+      },
+      "value": {
+        "type-name": "Struct",
+        "name": "EventInfo",
+        "elements": [
+          {
+            "name": "organizer",
+            "type": {
+              "type-name": "Bytes",
+              "length": 32
+            }
+          },
+          {
+            "name": "payout",
+            "type": {
+              "type-name": "Struct",
+              "name": "UserAddress",
+              "elements": [
+                {
+                  "name": "bytes",
+                  "type": {
+                    "type-name": "Bytes",
+                    "length": 32
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "open",
+            "type": {
+              "type-name": "Boolean"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "ticketTypes",
+      "index": [
+        1,
+        8
+      ],
+      "exported": true,
+      "storage": "Map",
+      "key": {
+        "type-name": "Uint",
+        "maxval": 340282366920938463463374607431768211455
+      },
+      "value": {
+        "type-name": "Struct",
+        "name": "TicketType",
+        "elements": [
+          {
+            "name": "eventId",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 18446744073709551615
+            }
+          },
+          {
+            "name": "price",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 18446744073709551615
+            }
+          },
+          {
+            "name": "fee",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 18446744073709551615
+            }
+          },
+          {
+            "name": "supply",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 18446744073709551615
+            }
+          },
+          {
+            "name": "sold",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 18446744073709551615
+            }
+          },
+          {
+            "name": "resale",
+            "type": {
+              "type-name": "Enum",
+              "name": "ResaleMode",
+              "elements": [
+                "capped",
+                "unlimited",
+                "none"
+              ]
+            }
+          },
+          {
+            "name": "maxResale",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 18446744073709551615
+            }
+          },
+          {
+            "name": "adultOnly",
+            "type": {
+              "type-name": "Boolean"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "listings",
+      "index": [
+        1,
+        9
+      ],
+      "exported": true,
+      "storage": "Map",
+      "key": {
+        "type-name": "Uint",
+        "maxval": 18446744073709551615
+      },
+      "value": {
+        "type-name": "Struct",
+        "name": "Listing",
+        "elements": [
+          {
+            "name": "seller",
+            "type": {
+              "type-name": "Bytes",
+              "length": 32
+            }
+          },
+          {
+            "name": "payout",
+            "type": {
+              "type-name": "Struct",
+              "name": "UserAddress",
+              "elements": [
+                {
+                  "name": "bytes",
+                  "type": {
+                    "type-name": "Bytes",
+                    "length": 32
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "name": "typeId",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 340282366920938463463374607431768211455
+            }
+          },
+          {
+            "name": "price",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 18446744073709551615
+            }
+          },
+          {
+            "name": "fee",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 18446744073709551615
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "eventCount",
+      "index": [
+        1,
+        10
+      ],
+      "exported": true,
+      "storage": "Counter"
+    },
+    {
+      "name": "typeCount",
+      "index": [
+        1,
+        11
+      ],
+      "exported": true,
+      "storage": "Counter"
+    },
+    {
+      "name": "listingCount",
+      "index": [
+        1,
+        12
+      ],
+      "exported": true,
+      "storage": "Counter"
+    },
+    {
+      "name": "checkIns",
+      "index": [
+        1,
+        13
+      ],
+      "exported": true,
+      "storage": "Map",
+      "key": {
+        "type-name": "Bytes",
+        "length": 32
+      },
+      "value": {
+        "type-name": "Uint",
+        "maxval": 340282366920938463463374607431768211455
+      }
+    },
+    {
+      "name": "ageIssuer",
+      "index": [
+        1,
+        14
+      ],
+      "exported": true,
+      "storage": "Cell",
+      "type": {
+        "type-name": "JubjubPoint"
+      }
+    }
+  ]
+}

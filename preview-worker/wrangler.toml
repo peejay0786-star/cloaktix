@@ -1,0 +1,17 @@
+name = "cloaktix-app-preview"
+compatibility_date = "2024-11-01"
+main = "worker.js"
+
+[assets]
+directory = "../web-dist-app-preview"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+# Without this, Workers Assets serves matching static files directly and the
+# Worker (headers + gzip repair) never runs for /assets/*.wasm.
+run_worker_first = true
+
+# Bundle compact-runtime for the Worker-side test issuer (/passport/*).
+[alias]
+"@midnightntwrk/onchain-runtime-v4" = "./onchain-runtime-shim.js"
+"@midnight-ntwrk/onchain-runtime-v4" = "./onchain-runtime-shim.js"
+"@midnight-ntwrk/compact-runtime" = "./node_modules/@midnight-ntwrk/compact-runtime/dist/index.js"

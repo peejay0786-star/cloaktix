@@ -1,0 +1,179 @@
+// SPDX-License-Identifier: Apache-2.0
+// CloakTix — SHIELDED VARIANT (experimental). TESTNET/LOCAL ONLY, not audited.
+// NIGHT is unshielded by design: we wrap it into a shielded "wNIGHT" token
+// backed 1:1 by the NIGHT locked in this contract (wrap / unwrap).
+// Ticket payments in shielded wNIGHT: 3% fee -> the platform's Zswap key,
+// 97% -> the organizer's Zswap key (sale) or the seller's reserve (resale, withdrawn via H(sk)).
+// (Emergency pause removed here: 13 circuits exceeded the block limit at deploy.)
+// (Single-use checkIn exists only in the simple contract; this variant keeps proveHolder.)
+pragma language_version >= 0.21.0;
+
+import CompactStandardLibrary;
+import "../../oz/contracts/src/token/MultiToken" prefix MT_;
+
+export { ContractAddress, Either, Maybe, UserAddress, ZswapCoinPublicKey, ShieldedCoinInfo, QualifiedShieldedCoinInfo };
+
+witness wit_CloakSK(): Bytes<32>;
+
+export struct EventInfo { organizer: Bytes<32>; payout: ZswapCoinPublicKey; open: Boolean; }
+export struct TicketType {
+  eventId: Uint<64>; price: Uint<64>; fee: Uint<64>;
+  supply: Uint<64>; sold: Uint<64>; maxResale: Uint<64>;
+}
+export struct Listing { seller: Bytes<32>; typeId: Uint<128>; price: Uint<64>; fee: Uint<64>; }
+
+export sealed ledger feeBps: Uint<16>;
+export sealed ledger feeKey: ZswapCoinPublicKey;   // shielded Zswap key that receives fees
+export ledger events: Map<Uint<64>, EventInfo>;
+export ledger ticketTypes: Map<Uint<128>, TicketType>;
+export ledger listings: Map<Uint<64>, Listing>;
+export ledger proceeds: Map<Uint<64>, QualifiedShieldedCoinInfo>; // resale proceeds to claim
+export ledger soldListings: Map<Uint<64>, Bytes<32>>;               // listingId -> vendeur H(sk)
+export ledger eventCount: Counter;
+export ledger typeCount: Counter;
+export ledger listingCount: Counter;
+export ledger wrapped: Counter; // number of wrap operations (the locked NIGHT is the contract balance)
+
+constructor(uri_: Opaque<"string">, feeBps_: Uint<16>, feeKey_: ZswapCoinPublicKey) {
+  MT_initialize(uri_);
+  assert(disclose(feeBps_) <= 10000, "feeBps > 100%");
+  feeBps = disclose(feeBps_);
+  feeKey = disclose(feeKey_);
+}
+
+circuit me(): Bytes<32> { return MT_computeAccountId(wit_CloakSK()); }
+
+circuit payColor(): Bytes<32> { return tokenType(pad(32, "cloaktix:wnight:"), kernel.self()); }
+
+circuit checkFee(p: Uint<64>, f: Uint<64>): [] {
+  const pb = p * feeBps;
+  assert(f * 10000 <= pb, "fee too high");
+  assert(pb < (f + 1) * 10000, "fee too low");
+  assert(f > 0, "Price too low");
+}
+
+// The payer supplies two fresh coins (random nonces): fee and remainder. Their wallet pays them
+// with its shielded wNIGHT coins and gets change back under new nonces.
+circuit takePayment(feeCoin: ShieldedCoinInfo, restCoin: ShieldedCoinInfo, fee: Uint<64>, rest: Uint<64>): [] {
+  const c = payColor();
+  assert(disclose(feeCoin.color == c && restCoin.color == c), "Pay in wNIGHT");
+  assert(disclose(feeCoin.value == fee as Uint<128>), "Wrong fee coin");
+  assert(disclose(restCoin.value == rest as Uint<128>), "Wrong payment coin");
+  receiveShielded(disclose(feeCoin));
+  receiveShielded(disclose(restCoin));
+  sendImmediateShielded(disclose(feeCoin), left<ZswapCoinPublicKey, ContractAddress>(feeKey), fee as Uint<128>);
+}
+
+// ---- wNIGHT : NIGHT non-shielded <-> jeton shielded 1:1 ----
+export circuit wrap(amount: Uint<64>, nonce: Bytes<32>): [] {
+  const a = disclose(amount);
+  assert(a > 0, "Zero");
+  receiveUnshielded(nativeToken(), a as Uint<128>);
+  mintShieldedToken(pad(32, "cloaktix:wnight:"), a, disclose(nonce),
+                    left<ZswapCoinPublicKey, ContractAddress>(disclose(ownPublicKey())));
+  wrapped.increment(1);
+}
+
+export circuit unwrap(coin: ShieldedCoinInfo, to: UserAddress): [] {
+  const c = disclose(coin);
+  assert(c.color == payColor(), "Not wNIGHT");
+  receiveShielded(c);
+  sendImmediateShielded(c, shieldedBurnAddress(), c.value);
+  sendUnshielded(nativeToken(), c.value, right<ContractAddress, UserAddress>(disclose(to)));
+}
+
+// ---- Organisateur ----
+export circuit createEvent(payout: ZswapCoinPublicKey): Uint<64> {
+  const id = (eventCount.read() + 1) as Uint<64>;
+  events.insert(id, EventInfo { organizer: disclose(me()), payout: disclose(payout), open: true });
+  eventCount.increment(1);
+  return id;
+}
+
+export circuit addTicketType(eventId: Uint<64>, price: Uint<64>, fee: Uint<64>,
+                             supply: Uint<64>, maxResale: Uint<64>): Uint<128> {
+  const e = disclose(eventId);
+  assert(events.member(e), "No event");
+  assert(disclose(events.lookup(e).organizer == me()), "Not organizer");
+  const p = disclose(price);
+  const f = disclose(fee);
+  checkFee(p, f);
+  const id = (typeCount.read() + 1) as Uint<128>;
+  ticketTypes.insert(id, TicketType {
+    eventId: e, price: p, fee: f, supply: disclose(supply), sold: 0, maxResale: disclose(maxResale) });
+  typeCount.increment(1);
+  return id;
+}
+
+// ---- Primary sale paid in shielded wNIGHT ----
+export circuit buyTicket(typeId: Uint<128>, feeCoin: ShieldedCoinInfo, restCoin: ShieldedCoinInfo): [] {
+  const t = disclose(typeId);
+  assert(ticketTypes.member(t), "No ticket type");
+  const tt = ticketTypes.lookup(t);
+  const ev = events.lookup(tt.eventId);
+  assert(ev.open, "Sales closed");
+  assert(tt.sold < tt.supply, "Sold out");
+  const rest = (tt.price - tt.fee) as Uint<64>;
+  takePayment(feeCoin, restCoin, tt.fee, rest);
+  sendImmediateShielded(disclose(restCoin), left<ZswapCoinPublicKey, ContractAddress>(ev.payout), rest as Uint<128>);
+  MT__mint(left<Bytes<32>, ContractAddress>(me()), t, 1);
+  ticketTypes.insert(t, TicketType { eventId: tt.eventId, price: tt.price, fee: tt.fee,
+    supply: tt.supply, sold: (tt.sold + 1) as Uint<64>, maxResale: tt.maxResale });
+}
+
+// ---- Capped resale; the seller exposes no wallet key ----
+export circuit listForResale(typeId: Uint<128>, price: Uint<64>, fee: Uint<64>): Uint<64> {
+  const t = disclose(typeId);
+  assert(ticketTypes.member(t), "No ticket type");
+  const p = disclose(price);
+  const f = disclose(fee);
+  assert(p <= ticketTypes.lookup(t).maxResale, "Above max resale price");
+  checkFee(p, f);
+  MT__unsafeTransfer(left<Bytes<32>, ContractAddress>(me()),
+                     right<Bytes<32>, ContractAddress>(kernel.self()), t, 1);
+  const id = (listingCount.read() + 1) as Uint<64>;
+  listings.insert(id, Listing { seller: disclose(me()), typeId: t, price: p, fee: f });
+  listingCount.increment(1);
+  return id;
+}
+
+export circuit buyResale(listingId: Uint<64>, feeCoin: ShieldedCoinInfo, restCoin: ShieldedCoinInfo): [] {
+  const l = disclose(listingId);
+  assert(listings.member(l), "No listing");
+  const li = listings.lookup(l);
+  const rest = (li.price - li.fee) as Uint<64>;
+  takePayment(feeCoin, restCoin, li.fee, rest);
+  proceeds.insertCoin(l, disclose(restCoin), right<ZswapCoinPublicKey, ContractAddress>(kernel.self()));
+  soldListings.insert(l, li.seller);
+  MT__unsafeTransfer(right<Bytes<32>, ContractAddress>(kernel.self()),
+                     left<Bytes<32>, ContractAddress>(me()), li.typeId, 1);
+  listings.remove(l);
+}
+
+// The seller proves H(sk) and receives the proceeds on the submitting wallet's Zswap key.
+export circuit claimProceeds(listingId: Uint<64>): [] {
+  const l = disclose(listingId);
+  assert(soldListings.member(l), "Nothing to claim");
+  assert(disclose(soldListings.lookup(l) == me()), "Not seller");
+  const coin = proceeds.lookup(l);
+  sendShielded(coin, left<ZswapCoinPublicKey, ContractAddress>(ownPublicKey()), coin.value);
+  proceeds.remove(l);
+  soldListings.remove(l);
+}
+
+export circuit cancelListing(listingId: Uint<64>): [] {
+  const l = disclose(listingId);
+  assert(listings.member(l), "No listing");
+  const li = listings.lookup(l);
+  assert(disclose(li.seller == me()), "Not seller");
+  MT__unsafeTransfer(right<Bytes<32>, ContractAddress>(kernel.self()),
+                     left<Bytes<32>, ContractAddress>(li.seller), li.typeId, 1);
+  listings.remove(l);
+}
+
+export circuit proveHolder(typeId: Uint<128>): [] {
+  assert(disclose(MT_balanceOf(left<Bytes<32>, ContractAddress>(me()), typeId) >= 1), "Not holder");
+}
+
+
+export pure circuit accountId(sk: Bytes<32>): Bytes<32> { return MT_computeAccountId(sk); }

@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CloakTix — Private tickets on Midnight · Coming soon</title>
+<meta name="description" content="CloakTix: private NFT tickets and passes on Midnight. Zero-knowledge proofs, resale caps set by the organizer, and simple QR entry. Coming soon.">
+<meta name="theme-color" content="#0A0A0A">
+<link rel="icon" href="assets/brand/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/brand/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/brand/apple-touch-icon-180.png">
+<meta property="og:type" content="website">
+<meta property="og:title" content="CloakTix — Private NFT tickets on Midnight">
+<meta property="og:description" content="Private tickets and passes with zero-knowledge proofs, resale caps and simple QR entry. Coming soon.">
+<meta property="og:image" content="https://cloaktix.com/assets/cloaktix-demo-poster.jpg">
+<meta property="og:url" content="https://cloaktix.com/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@CloakTix">
+<link rel="preload" href="assets/fonts/Outfit.woff" as="font" type="font/woff" crossorigin>
+<style>
+@font-face { font-family: 'Outfit'; src: url('assets/fonts/Outfit.woff') format('woff'); font-weight: 100 900; font-display: swap; }
+@font-face { font-family: 'Inter'; src: url('assets/fonts/Inter.woff') format('woff'); font-weight: 100 900; font-display: swap; }
+:root { --night:#0A0A0A; --white:#FFFFFF; --amber:#F5A300; --panel:#141414; --line:#262626; --muted:#9a9a9a; }
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--night); color: var(--white); font-family: Inter, system-ui, sans-serif; font-size: 16px; -webkit-font-smoothing: antialiased; }
+body { min-height: 100vh; display: flex; flex-direction: column;
+  background: radial-gradient(900px 480px at 50% -120px, rgba(245,163,0,.10), transparent 70%), var(--night); }
+h1, h2, h3, .badge, .btn { font-family: Outfit, Inter, sans-serif; }
+a { color: inherit; }
+.amber { color: var(--amber); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 32px; border-bottom: 1px solid var(--line); }
+.top img { height: 34px; display: block; }
+.badge { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--amber); border: 1px solid rgba(245,163,0,.45); background: rgba(245,163,0,.06); padding: 6px 12px; border-radius: 999px; white-space: nowrap; }
+.badge::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 0 0 rgba(245,163,0,.6); animation: pulse 2s infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(245,163,0,.55); } 70% { box-shadow: 0 0 0 8px rgba(245,163,0,0); } 100% { box-shadow: 0 0 0 0 rgba(245,163,0,0); } }
+@media (prefers-reduced-motion: reduce) { .badge::before { animation: none; } }
+main { flex: 1; width: 100%; max-width: 1080px; margin: 0 auto; padding: 0 32px 56px; }
+.hero { text-align: center; padding: 72px 0 40px; max-width: 760px; margin: 0 auto; }
+.mark { width: 88px; height: 88px; margin: 0 auto 22px; display: block; }
+.kicker { color: var(--amber); font: 600 13px Outfit, sans-serif; letter-spacing: .14em; text-transform: uppercase; margin: 0 0 14px; }
+h1 { font-size: 54px; line-height: 1.05; font-weight: 600; letter-spacing: .01em; margin: 0 0 18px; }
+.pitch { color: #cfcfcf; font-size: 18px; line-height: 1.6; margin: 0 auto 30px; max-width: 620px; }
+.cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; align-items: center; }
+.btn { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 600; font-size: 16px; padding: 13px 24px; border-radius: 12px; border: 1px solid var(--amber); background: var(--amber); color: var(--night); }
+.btn:hover { filter: brightness(1.08); }
+.btn svg { width: 17px; height: 17px; fill: currentColor; }
+.video { margin: 28px auto 0; max-width: 960px; border-radius: 18px; overflow: hidden; border: 1px solid var(--line); background: #000; box-shadow: 0 30px 80px -30px rgba(245,163,0,.25); aspect-ratio: 16 / 9; }
+.video video { width: 100%; height: 100%; display: block; }
+.vcap { text-align: center; color: var(--muted); font-size: 13px; margin: 12px 0 0; }
+.features { list-style: none; padding: 0; margin: 56px auto 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; max-width: 960px; }
+.features li { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 20px; }
+.features h3 { font-size: 17px; font-weight: 600; margin: 0 0 8px; display: flex; align-items: center; gap: 10px; }
+.features h3::before { content: ''; flex: none; width: 8px; height: 8px; background: var(--amber); }
+.features p { margin: 0; color: #bdbdbd; font-size: 14px; line-height: 1.55; }
+footer { text-align: center; color: #6d6d6d; font-size: 13px; padding: 24px; border-top: 1px solid var(--line); display: flex; justify-content: center; gap: 18px; flex-wrap: wrap; }
+footer a { color: var(--muted); text-decoration: none; } footer a:hover { color: var(--white); }
+#rain { will-change: transform; position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; display: block; }
+.veil { position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background: radial-gradient(ellipse 60% 45% at 50% 32%, rgba(10,10,10,.85), rgba(10,10,10,.35) 70%, transparent 100%); }
+.top, main, footer { position: relative; z-index: 1; }
+.top { border-bottom-color: rgba(38,38,38,.6); background: rgba(10,10,10,.55); backdrop-filter: blur(4px); }
+footer { background: rgba(10,10,10,.7); }
+.top .badge { margin-left: auto; }
+.lockup { display: block; width: min(560px, 92%); height: auto; margin: 0 auto 6px; }
+.tagline { font: 400 26px/1.3 Inter, sans-serif; color: #c9cbe0; letter-spacing: .01em; margin: 0 0 22px; }
+.hero .badge { margin-bottom: 26px; }
+@media (max-width: 900px) { .features { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px) {
+  .top { padding: 12px 16px; } .top img { height: 26px; } .badge { font-size: 10.5px; padding: 5px 10px; }
+  main { padding: 0 16px 40px; }
+  .top { gap: 10px; }
+}
+@media (max-width: 420px) {
+  .top img { height: 22px; width: auto; } .badge { font-size: 10px; letter-spacing: .05em; padding: 5px 9px; gap: 6px; }
+}
+@media (max-width: 640px) {
+  .tagline { font-size: 19px; margin-bottom: 18px; } .lockup { width: 100%; }
+  .hero { padding: 40px 0 24px; } .mark { width: 68px; height: 68px; margin-bottom: 16px; }
+  h1 { font-size: 36px; } .pitch { font-size: 16px; }
+  .video { border-radius: 12px; margin-top: 16px; }
+  .features { grid-template-columns: 1fr; margin-top: 36px; gap: 12px; }
+}
+</style>
+</head>
+<body>
+<canvas id="rain" aria-hidden="true"></canvas>
+<div class="veil" aria-hidden="true"></div>
+<header class="top">
+  <a href="/" aria-label="CloakTix home"><img src="assets/brand/cloaktix_icon_transparent.svg" alt="CloakTix" width="34" height="34" style="height:34px"></a>
+  <span class="badge">Coming soon</span>
+</header>
+<main>
+  <section class="hero">
+    <span class="badge">Launching on Midnight</span>
+    <h1 class="sr-only">CloakTix</h1>
+    <img class="lockup" src="assets/brand/cloaktix_lockup_transparent_on-dark.svg" alt="CloakTix" width="897" height="220">
+    <p class="tagline">Private tickets on Midnight</p>
+    <p class="pitch">CloakTix issues event tickets and passes as private NFTs on Midnight. Fans buy with a zero-knowledge proof made in their browser, resale stays under the organizer's price cap, and entry is a simple single-use QR code.</p>
+    <div class="cta">
+      <a class="btn" href="https://x.com/CloakTix" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        Follow @CloakTix on X
+      </a>
+    </div>
+  </section>
+
+  <figure class="video" style="margin-left:auto;margin-right:auto">
+    <video controls playsinline preload="metadata" poster="assets/cloaktix-demo-poster.jpg" aria-label="CloakTix demo video">
+      <source src="assets/cloaktix-demo.mp4" type="video/mp4">
+      Your browser can't play this video. <a href="assets/cloaktix-demo.mp4">Download the demo (MP4)</a>.
+    </video>
+  </figure>
+  <p class="vcap">Demo on Midnight Preprod (test network)</p>
+
+  <ul class="features">
+    <li><h3>Private by default</h3><p>Zero-knowledge proofs: buy and hold tickets without exposing your wallet or identity.</p></li>
+    <li><h3>Fair resale</h3><p>Organizers set the resale cap per ticket type, enforced on-chain. Scalpers can't run prices up.</p></li>
+    <li><h3>Simple QR entry</h3><p>Turn a ticket into a single-use QR pass at the door. Replays are refused.</p></li>
+    <li><h3>18+ without ID</h3><p>For age-restricted events, prove only "adult: yes". No ID document shown.</p></li>
+  </ul>
+</main>
+<footer>
+  <span>© 2026 CloakTix</span>
+  <a href="https://x.com/CloakTix" target="_blank" rel="noopener noreferrer">X: @CloakTix</a>
+</footer>
+<script>
+/* Background: faint drifting columns of Midnight-style marks (3 small squares stacked vertically) in CloakTix amber.
+   rAF at display refresh rate, delta-time motion, sub-pixel positions, eased opacity, DPR-aware, no per-frame allocation. */
+(function () {
+  var c = document.getElementById('rain'), x = c.getContext('2d', { alpha: true });
+  var still = window.matchMedia('(prefers-reduced-motion: reduce)');
+  var COL = 54, SQ = 5, STEP = 8;                 /* square 5px, pitch 8px ≈ Midnight mark proportions (4.68 / 7.4) */
+  var MAXN = 512, n = 0;
+  var px = new Float32Array(MAXN), py = new Float32Array(MAXN), pv = new Float32Array(MAXN),
+      pa = new Float32Array(MAXN), pp = new Float32Array(MAXN), pf = new Float32Array(MAXN);
+  var W = 0, H = 0, raf = 0, last = 0, running = false;
+  function rnd(a, b) { return a + Math.random() * (b - a); }
+  function seed(i, y) { py[i] = y; pv[i] = rnd(6, 14); pa[i] = rnd(.12, .30); pp[i] = rnd(0, 6.2832); pf[i] = rnd(.35, .9); }
+  function setup() {
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = innerWidth; H = innerHeight;
+    c.width = Math.round(W * dpr); c.height = Math.round(H * dpr);
+    x.setTransform(dpr, 0, 0, dpr, 0, 0);
+    n = 0; var off = (W % COL) / 2 + (COL - SQ) / 2;
+    for (var cx = off; cx < W && n < MAXN; cx += COL) {
+      var m = 3 + (Math.random() * 3 | 0);
+      for (var k = 0; k < m && n < MAXN; k++, n++) { px[n] = Math.round(cx); seed(n, rnd(-40, H + 40)); }
+    }
+  }
+  function draw(t, dt) {
+    x.clearRect(0, 0, W, H); x.fillStyle = '#F5A300';
+    var ts = t * .001, span = H + 80;
+    for (var i = 0; i < n; i++) {
+      var y = py[i] + pv[i] * dt;
+      if (y > H + 40) { seed(i, y - span); y = py[i]; }
+      py[i] = y;
+      var s = .5 + .5 * Math.sin(ts * pf[i] + pp[i]);       /* slow breathing */
+      var a = pa[i] * (.35 + .65 * s * s * (3 - 2 * s));       /* smoothstep-eased opacity */
+      var e = y < 40 ? (y + 40) / 80 : (y > H - 40 ? (H + 40 - y) / 80 : 1); /* soft fade at top/bottom edges */
+      x.globalAlpha = a * (e < 0 ? 0 : e);
+      var X = px[i];
+      x.fillRect(X, y, SQ, SQ); x.fillRect(X, y + STEP, SQ, SQ); x.fillRect(X, y + 2 * STEP, SQ, SQ);
+    }
+    x.globalAlpha = 1;
+  }
+  function loop(t) {
+    if (!running) return;
+    var dt = last ? (t - last) / 1000 : 0; if (dt > .1) dt = .1; last = t;
+    draw(t, dt); raf = requestAnimationFrame(loop);
+  }
+  function stop() { running = false; cancelAnimationFrame(raf); }
+  function start() {
+    stop(); setup(); last = 0;
+    if (still.matches) { draw(0, 0); return; }
+    running = true; raf = requestAnimationFrame(loop);
+  }
+  function resume() { if (still.matches || running) return; last = 0; running = true; raf = requestAnimationFrame(loop); }
+  var rt; addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(start, 150); });
+  document.addEventListener('visibilitychange', function () { if (document.hidden) stop(); else resume(); });
+  if (still.addEventListener) still.addEventListener('change', start);
+  start();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+{
+  "name": "cloaktix-web",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "build:preview": "VITE_NETWORK=preview VITE_RATE_V3_CONTRACT=b92733389b1955c913dec004df708a12697df4a962ffab5dbde1e88f574ab04e vite build --mode preview --outDir ../web-dist-app-preview --emptyOutDir",
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test ../test/cloaktix-v2.sim.node.test.mjs test/*.node.test.mts",
+    "build:local": "VITE_NETWORK=preview vite build --outDir ../web-dist-clean-local --emptyOutDir",
+    "build:multi-local": "VITE_NETWORK=preview vite build --outDir ../web-dist-multi-local --emptyOutDir"
+  },
+  "dependencies": {
+    "@emurgo/cardano-serialization-lib-asmjs": "^13.2.1",
+    "@midnight-ntwrk/compact-js": "3.0.0",
+    "@midnight-ntwrk/compact-runtime": "0.21.0",
+    "@midnight-ntwrk/dapp-connector-api": "4.1.0",
+    "@midnight-ntwrk/midnight-js-contracts": "5.0.0",
+    "@midnight-ntwrk/midnight-js-dapp-connector-proof-provider": "5.0.0",
+    "@midnight-ntwrk/midnight-js-fetch-zk-config-provider": "5.0.0",
+    "@midnight-ntwrk/midnight-js-indexer-public-data-provider": "5.0.0",
+    "@midnight-ntwrk/midnight-js-protocol": "5.0.0",
+    "@midnight-ntwrk/midnight-js-utils": "5.0.0",
+    "@midnight-ntwrk/onchain-runtime-v4": "4.0.0",
+    "@midnight-ntwrk/wallet-sdk-address-format": "4.0.0",
+    "@midnightntwrk/zkir-v3": "3.2.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "react-test-renderer": "^19.1.0",
+    "typescript": "^5.7.0",
+    "vite": "6.4.4",
+    "vite-plugin-node-polyfills": "^0.24.0",
+    "vite-plugin-top-level-await": "^1.6.0",
+    "vite-plugin-wasm": "^3.6.0"
+  },
+  "overrides": {}
+}

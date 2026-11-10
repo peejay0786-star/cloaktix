@@ -1,0 +1,96 @@
+{
+  "manifest-version": "1",
+  "compiler-version": "0.36.0",
+  "compiler-commit": "b5d9e4dfc532fe47011c4f6296e254f4853eb469",
+  "language-version": "0.28.0",
+  "runtime-version": "0.21.0",
+  "compiler": {
+    "type": "directory",
+    "contract-info.json": {
+      "type": "file",
+      "size": 22693,
+      "hash": "62b7acd3852989844546ec110dfba425285d671aafde4c136d64a1fd9a145f73"
+    }
+  },
+  "contract": {
+    "type": "directory",
+    "index.d.ts": {
+      "type": "file",
+      "size": 13453,
+      "hash": "0d8451ce5b21b111924caa97ef25d29008edce7b6c596e4d8dbec9f2a1de126b"
+    },
+    "index.js": {
+      "type": "file",
+      "size": 267213,
+      "hash": "5b04f8d4619df63c4399709d9193201f748ef77963177c67948305216c310dbc"
+    },
+    "index.js.map": {
+      "type": "file",
+      "size": 11967,
+      "hash": "00c1ecb71dc3ec5069764f3eca5b7f65cc26d8695834e7b8449e7a674c92b15b"
+    }
+  },
+  "zkir": {
+    "type": "directory",
+    "addTicketType.zkir": {
+      "type": "file",
+      "size": 6063,
+      "hash": "0dbe6ba119c29efbb5fe40d8d35a45d35adcfab490a26ffc0a3e77b14966a70e"
+    },
+    "adminSet.zkir": {
+      "type": "file",
+      "size": 2322,
+      "hash": "5496dad27b4527bafc7cbe58cfbd6b2e755e4c7cdcda5aad8dddb0e4e385af52"
+    },
+    "admit.zkir": {
+      "type": "file",
+      "size": 8488,
+      "hash": "94657dca928e888e8f5026cb1a4eefb54434475f07943954055c2279705ab286"
+    },
+    "buyResale.zkir": {
+      "type": "file",
+      "size": 15686,
+      "hash": "f48eeb975805bebacf58ca6d08bfbcf055939c2a121a2549a02d262e87f6959d"
+    },
+    "buyResaleAdult.zkir": {
+      "type": "file",
+      "size": 20030,
+      "hash": "0888a9f607ca8018ebc9a8a02913de3641b02b037bc71e5c7484d298190c225e"
+    },
+    "buyTicket.zkir": {
+      "type": "file",
+      "size": 15335,
+      "hash": "54247fa8aaedabb3a539a1e56788cb0f6bbd4e586a8933131c42a59c2f1e86c7"
+    },
+    "buyTicketAdult.zkir": {
+      "type": "file",
+      "size": 21032,
+      "hash": "80d3f9826928f8f4b0faa324395c8506a7188e086d0fb32af85d3cbb8ff30cbe"
+    },
+    "createEvent.zkir": {
+      "type": "file",
+      "size": 2638,
+      "hash": "07138422ca2d83d3a064f6a05f93064e31b88021c12b90f7e15e7a69acab7250"
+    },
+    "listForResale.zkir": {
+      "type": "file",
+      "size": 9295,
+      "hash": "d80f17e73fd310aa10cb08cb3a5fe8d6e8e3d3d529b4c0594a637962f8612ca2"
+    },
+    "proveHolder.zkir": {
+      "type": "file",
+      "size": 3026,
+      "hash": "5e69e61484ae29cfa512d00f99601be5eae8128b604ca40a8ab6f4acfdc9bf90"
+    },
+    "registerAdmit.zkir": {
+      "type": "file",
+      "size": 4825,
+      "hash": "6096a56e75e1fbc7671aea8514f7dda77f06683a41b50e00499b41af6f4e4e9b"
+    },
+    "setSalesOpen.zkir": {
+      "type": "file",
+      "size": 3035,
+      "hash": "7a5216cad3c1f7c53128bcf42c8ea74a9e455983a0a935dbe752a8ccbc631a8c"
+    }
+  }
+}

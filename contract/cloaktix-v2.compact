@@ -1,0 +1,342 @@
+// SPDX-License-Identifier: Apache-2.0
+// CloakTix v2 — unique per-ticket serials + organizer-gated admit.
+// LOCAL / TESTNET ONLY, not audited. Schema is intentionally separate from v1 MultiToken balances.
+// Deploy budget: Preview/mainnet block_limits.bytesWritten=50000; a normal deploy fits ~60% (~12
+// impure circuits / ~25KB VKs). Extra exported circuits caused 1010 "exhaust the block limits".
+// Design: each unit has serial, owner H(sk), status owned|listed|consumed, epoch (bumped on
+// ownership change). Buyer (PC wallet) registers admitCommit = H(tag, serial, epoch, nonce).
+// Phone shows nonce (fragment QR) without sk. Organizer/gate calls admit(serial, nonce) to consume.
+// Resale/withdraw clears commit and bumps epoch → former QR fails. Display alone never burns.
+pragma language_version >= 0.21.0;
+
+import CompactStandardLibrary;
+
+export { ContractAddress, Either, Maybe, UserAddress };
+
+witness wit_CloakSK(): Bytes<32>;
+witness wit_AgeCredential(): Maybe<AgeCredential>;
+
+export enum ResaleMode { capped, unlimited, none }
+export enum TicketStatus { owned, listed, consumed }
+
+export struct AgeClaim {
+  holder: Bytes<32>;
+  adultFrom: Uint<64>;
+}
+export struct AgeSignature { r: JubjubPoint; s: Field; }
+export struct AgeProof {
+  issuerMethod: Bytes<32>;
+  createdAt: Uint<64>;
+  challengeHash: Bytes<32>;
+  publicKey: JubjubPoint;
+  signature: AgeSignature;
+}
+export struct AgeCredential { claim: AgeClaim; proof: AgeProof; }
+
+export struct EventInfo { organizer: Bytes<32>; payout: UserAddress; open: Boolean; }
+export struct TicketType {
+  eventId: Uint<64>; price: Uint<64>; fee: Uint<64>;
+  supply: Uint<64>; sold: Uint<64>; resale: ResaleMode; maxResale: Uint<64>;
+  adultOnly: Boolean;
+}
+// listingId 0 = none. admitCommit meaningful only when hasAdmit.
+export struct Ticket {
+  typeId: Uint<128>;
+  owner: Bytes<32>;
+  status: TicketStatus;
+  epoch: Uint<64>;
+  hasAdmit: Boolean;
+  admitCommit: Bytes<32>;
+  listingId: Uint<64>;
+}
+export struct Listing {
+  seller: Bytes<32>; payout: UserAddress; serial: Uint<128>; typeId: Uint<128>;
+  price: Uint<64>; fee: Uint<64>;
+}
+// Domain binding: networkTag (sealed at deploy) + contractKey (hash of this contract address).
+// Cross-network replay of the same nonce is rejected on-chain when networkTag differs.
+// Cross-contract replay is rejected when contractKey differs. Client still checks QR net/contract.
+export struct AdmitMaterial {
+  tag: Bytes<32>;
+  networkTag: Bytes<32>;
+  contractKey: Bytes<32>;
+  serial: Uint<128>;
+  epoch: Uint<64>;
+  nonce: Bytes<32>;
+}
+
+export sealed ledger schemaVersion: Uint<8>; // = 2
+export sealed ledger networkTag: Bytes<32>;
+export sealed ledger feeBps: Uint<16>;
+export sealed ledger feeAddress: UserAddress;
+export sealed ledger admin: Bytes<32>;
+export ledger paused: Boolean;
+export ledger events: Map<Uint<64>, EventInfo>;
+export ledger ticketTypes: Map<Uint<128>, TicketType>;
+export ledger tickets: Map<Uint<128>, Ticket>;
+export ledger listings: Map<Uint<64>, Listing>;
+export ledger eventCount: Counter;
+export ledger typeCount: Counter;
+export ledger serialCount: Counter;
+export ledger listingCount: Counter;
+export ledger ageIssuer: JubjubPoint;
+
+constructor(feeBps_: Uint<16>, feeAddress_: UserAddress, admin_: Bytes<32>, ageIssuer_: JubjubPoint, networkTag_: Bytes<32>) {
+  assert(disclose(feeBps_) <= 10000, "feeBps > 100%");
+  schemaVersion = 2;
+  feeBps = disclose(feeBps_);
+  feeAddress = disclose(feeAddress_);
+  admin = disclose(admin_);
+  ageIssuer = disclose(ageIssuer_);
+  networkTag = disclose(networkTag_);
+  paused = false;
+}
+
+export pure circuit accountId(sk: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<1, Bytes<32>>>([sk]);
+}
+
+circuit me(): Bytes<32> {
+  return accountId(wit_CloakSK());
+}
+
+circuit assertNotPaused(): [] {
+  assert(!disclose(paused), "Paused");
+}
+
+circuit checkFee(p: Uint<64>, f: Uint<64>): [] {
+  const pb = p * feeBps;
+  assert(f * 10000 <= pb, "fee too high");
+  assert(pb < (f + 1) * 10000, "fee too low");
+}
+
+circuit pay(amount: Uint<64>, fee: Uint<64>, to: UserAddress): [] {
+  receiveUnshielded(nativeToken(), amount as Uint<128>);
+  if (fee > 0) {
+    sendUnshielded(nativeToken(), fee as Uint<128>, right<ContractAddress, UserAddress>(feeAddress));
+  }
+  if (amount > fee) {
+    sendUnshielded(nativeToken(), (amount - fee) as Uint<128>, right<ContractAddress, UserAddress>(to));
+  }
+}
+
+export pure circuit ageChallenge(claim: AgeClaim, issuerMethod: Bytes<32>, createdAt: Uint<64>,
+                                 challengeHash: Bytes<32>, publicKey: JubjubPoint, r: JubjubPoint): Field {
+  const body = persistentHash<AgeClaim>(claim);
+  const payload = persistentHash<Vector<5, Bytes<32>>>([body, pad(32, "midnight:vc:issuance"), issuerMethod,
+    upgradeFromTransient(transientHash<Uint<64>>(createdAt)), challengeHash]);
+  return degradeToTransient(persistentHash<Vector<3, Bytes<32>>>([payload,
+    upgradeFromTransient(transientHash<Vector<2, Field>>([jubjubPointX(publicKey), jubjubPointY(publicKey)])), upgradeFromTransient(transientHash<Vector<2, Field>>([jubjubPointX(r), jubjubPointY(r)]))]));
+}
+
+circuit assertAdult(asOf: Uint<64>): [] {
+  const m = wit_AgeCredential();
+  const c = m.value;
+  assert(disclose(m.is_some), "Age credential required (18+)");
+  assert(disclose(c.proof.publicKey == ageIssuer), "Age credential from an untrusted issuer");
+  assert(disclose(c.claim.holder == me()), "Age credential issued to another account");
+  const ch = ageChallenge(c.claim, c.proof.issuerMethod, c.proof.createdAt, c.proof.challengeHash, c.proof.publicKey, c.proof.signature.r);
+  assert(disclose(ecMulGenerator(c.proof.signature.s as JubjubScalar) == ecAdd(c.proof.signature.r, ecMul(c.proof.publicKey, ch as JubjubScalar))),
+         "Invalid age credential signature");
+  const t = disclose(asOf);
+  assert(blockTimeGte(t), "asOf is in the future");
+  assert(disclose(c.claim.adultFrom <= t), "Under 18");
+}
+
+export pure circuit contractKeyOf(addr: ContractAddress): Bytes<32> {
+  return upgradeFromTransient(transientHash<ContractAddress>(addr));
+}
+
+export pure circuit admitCommitOf(networkTag_: Bytes<32>, contractKey: Bytes<32>,
+                                  serial: Uint<128>, epoch: Uint<64>, nonce: Bytes<32>): Bytes<32> {
+  return persistentHash<AdmitMaterial>(AdmitMaterial {
+    tag: pad(32, "cloaktix:admit:v2"),
+    networkTag: networkTag_,
+    contractKey: contractKey,
+    serial: serial,
+    epoch: epoch,
+    nonce: nonce
+  });
+}
+
+circuit thisContractKey(): Bytes<32> {
+  return contractKeyOf(kernel.self());
+}
+
+circuit admitCommitFor(serial: Uint<128>, epoch: Uint<64>, nonce: Bytes<32>): Bytes<32> {
+  return admitCommitOf(networkTag, thisContractKey(), serial, epoch, nonce);
+}
+
+circuit emptyCommit(): Bytes<32> { return pad(32, ""); }
+
+export circuit createEvent(payout: UserAddress): Uint<64> {
+  assertNotPaused();
+  const id = (eventCount.read() + 1) as Uint<64>;
+  events.insert(id, EventInfo { organizer: disclose(me()), payout: disclose(payout), open: true });
+  eventCount.increment(1);
+  return id;
+}
+
+export circuit addTicketType(eventId: Uint<64>, price: Uint<64>, fee: Uint<64>,
+                             supply: Uint<64>, resale: ResaleMode, maxResale: Uint<64>, adultOnly: Boolean): Uint<128> {
+  assertNotPaused();
+  const e = disclose(eventId);
+  assert(events.member(e), "No event");
+  assert(disclose(events.lookup(e).organizer == me()), "Not organizer");
+  const p = disclose(price);
+  const f = disclose(fee);
+  checkFee(p, f);
+  const id = (typeCount.read() + 1) as Uint<128>;
+  ticketTypes.insert(id, TicketType {
+    eventId: e, price: p, fee: f, supply: disclose(supply), sold: 0, resale: disclose(resale),
+    maxResale: disclose(resale) == ResaleMode.capped ? disclose(maxResale) : 0, adultOnly: disclose(adultOnly) });
+  typeCount.increment(1);
+  return id;
+}
+
+export circuit setSalesOpen(eventId: Uint<64>, open: Boolean): [] {
+  const e = disclose(eventId);
+  assert(events.member(e), "No event");
+  const ev = events.lookup(e);
+  assert(disclose(ev.organizer == me()), "Not organizer");
+  events.insert(e, EventInfo { organizer: ev.organizer, payout: ev.payout, open: disclose(open) });
+}
+
+circuit mintOwned(typeId: Uint<128>, admitCommit: Bytes<32>): Uint<128> {
+  const t = disclose(typeId);
+  assert(ticketTypes.member(t), "No ticket type");
+  const tt = ticketTypes.lookup(t);
+  const ev = events.lookup(tt.eventId);
+  assert(ev.open, "Sales closed");
+  assert(tt.sold < tt.supply, "Sold out");
+  pay(tt.price, tt.fee, ev.payout);
+  const serial = (serialCount.read() + 1) as Uint<128>;
+  serialCount.increment(1);
+  const commit = disclose(admitCommit);
+  const has = commit != emptyCommit();
+  tickets.insert(serial, Ticket {
+    typeId: t, owner: disclose(me()), status: TicketStatus.owned, epoch: 1,
+    hasAdmit: has, admitCommit: commit, listingId: 0 });
+  ticketTypes.insert(t, TicketType { eventId: tt.eventId, price: tt.price, fee: tt.fee,
+    supply: tt.supply, sold: (tt.sold + 1) as Uint<64>, resale: tt.resale, maxResale: tt.maxResale, adultOnly: tt.adultOnly });
+  return serial;
+}
+
+circuit sellPrimary(typeId: Uint<128>, admitCommit: Bytes<32>, adultProven: Boolean): Uint<128> {
+  assertNotPaused();
+  const t = disclose(typeId);
+  assert(ticketTypes.member(t), "No ticket type");
+  assert(adultProven || !ticketTypes.lookup(t).adultOnly, "18+ ticket type: age proof required (buyTicketAdult)");
+  return mintOwned(t, admitCommit);
+}
+
+export circuit buyTicket(typeId: Uint<128>, admitCommit: Bytes<32>): Uint<128> {
+  return sellPrimary(typeId, admitCommit, false);
+}
+export circuit buyTicketAdult(typeId: Uint<128>, admitCommit: Bytes<32>, asOf: Uint<64>): Uint<128> {
+  assertAdult(asOf);
+  return sellPrimary(typeId, admitCommit, true);
+}
+
+// Owner (PC) registers/rotates admit for this serial/epoch, or clears it with empty commit.
+// Empty commit clears (replaces former clearAdmit circuit — keeps deploy under Preview block bytesWritten).
+// Does NOT consume.
+export circuit registerAdmit(serial: Uint<128>, commit: Bytes<32>): [] {
+  assertNotPaused();
+  const s = disclose(serial);
+  assert(tickets.member(s), "No ticket");
+  const tk = tickets.lookup(s);
+  assert(tk.status == TicketStatus.owned, "Not owned");
+  assert(disclose(tk.owner == me()), "Not ticket owner");
+  const c = disclose(commit);
+  const clearing = c == emptyCommit();
+  tickets.insert(s, Ticket {
+    typeId: tk.typeId, owner: tk.owner, status: tk.status, epoch: tk.epoch,
+    hasAdmit: !clearing, admitCommit: clearing ? emptyCommit() : c, listingId: 0 });
+}
+
+export circuit listForResale(serial: Uint<128>, price: Uint<64>, fee: Uint<64>, payout: UserAddress): Uint<64> {
+  assertNotPaused();
+  const s = disclose(serial);
+  assert(tickets.member(s), "No ticket");
+  const tk = tickets.lookup(s);
+  assert(tk.status == TicketStatus.owned, "Not owned");
+  assert(disclose(tk.owner == me()), "Not ticket owner");
+  const tt = ticketTypes.lookup(tk.typeId);
+  assert(tt.resale != ResaleMode.none, "Resale not allowed");
+  const p = disclose(price);
+  const f = disclose(fee);
+  assert(tt.resale == ResaleMode.unlimited || p <= tt.maxResale, "Above max resale price");
+  checkFee(p, f);
+  const id = (listingCount.read() + 1) as Uint<64>;
+  listingCount.increment(1);
+  // Escrow: bump epoch + clear admit so any prior phone QR is stale.
+  const newEpoch = (tk.epoch + 1) as Uint<64>;
+  tickets.insert(s, Ticket {
+    typeId: tk.typeId, owner: tk.owner, status: TicketStatus.listed, epoch: newEpoch,
+    hasAdmit: false, admitCommit: emptyCommit(), listingId: id });
+  listings.insert(id, Listing {
+    seller: disclose(me()), payout: disclose(payout), serial: s, typeId: tk.typeId, price: p, fee: f });
+  return id;
+}
+
+circuit sellResale(listingId: Uint<64>, adultProven: Boolean): [] {
+  const l = disclose(listingId);
+  assert(listings.member(l), "No listing");
+  const li = listings.lookup(l);
+  const s = li.serial;
+  assert(tickets.member(s), "No ticket");
+  const tk = tickets.lookup(s);
+  assert(tk.status == TicketStatus.listed, "Not listed");
+  assert(tk.listingId == l, "Listing mismatch");
+  const withdraw = !adultProven && disclose(li.seller == me());
+  if (!withdraw) {
+    assertNotPaused();
+    assert(adultProven || !ticketTypes.lookup(li.typeId).adultOnly, "18+ ticket type: age proof required (buyResaleAdult)");
+    pay(li.price, li.fee, li.payout);
+  }
+  const newOwner = disclose(me());
+  const newEpoch = (tk.epoch + 1) as Uint<64>;
+  tickets.insert(s, Ticket {
+    typeId: tk.typeId, owner: newOwner, status: TicketStatus.owned, epoch: newEpoch,
+    hasAdmit: false, admitCommit: emptyCommit(), listingId: 0 });
+  listings.remove(l);
+}
+
+export circuit buyResale(listingId: Uint<64>): [] { sellResale(listingId, false); }
+export circuit buyResaleAdult(listingId: Uint<64>, asOf: Uint<64>): [] {
+  assertAdult(asOf);
+  sellResale(listingId, true);
+}
+
+// Organizer of the ticket's event consumes admission. Serial alone is NOT enough: nonce must match commit.
+export circuit admit(serial: Uint<128>, nonce: Bytes<32>): [] {
+  assertNotPaused();
+  const s = disclose(serial);
+  assert(tickets.member(s), "No ticket");
+  const tk = tickets.lookup(s);
+  assert(tk.status == TicketStatus.owned, "Not owned");
+  assert(tk.hasAdmit, "No admit registered");
+  const tt = ticketTypes.lookup(tk.typeId);
+  const ev = events.lookup(tt.eventId);
+  assert(disclose(ev.organizer == me()), "Not gate/organizer");
+  const n = disclose(nonce);
+  assert(disclose(tk.admitCommit == admitCommitFor(s, tk.epoch, n)), "Bad admit");
+  tickets.insert(s, Ticket {
+    typeId: tk.typeId, owner: tk.owner, status: TicketStatus.consumed, epoch: tk.epoch,
+    hasAdmit: false, admitCommit: emptyCommit(), listingId: 0 });
+}
+
+export circuit proveHolder(serial: Uint<128>): [] {
+  const s = disclose(serial);
+  assert(tickets.member(s), "No ticket");
+  const tk = tickets.lookup(s);
+  assert(tk.status == TicketStatus.owned, "Not owned");
+  assert(disclose(tk.owner == me()), "Not ticket owner");
+}
+
+export circuit adminSet(paused_: Boolean, newIssuer: Maybe<JubjubPoint>): [] {
+  assert(disclose(me() == admin), "Not admin");
+  paused = disclose(paused_);
+  if (disclose(newIssuer.is_some)) { ageIssuer = disclose(newIssuer.value); }
+}
