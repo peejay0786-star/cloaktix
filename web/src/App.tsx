@@ -419,7 +419,7 @@ function BuyerApp() {
       </div></Dialog>}
 
       {s && tab !== 'home' && <main id="main" className={tab === 'events' && evRoute === null ? 'buyer-catalog-main' : undefined}>
-        {busy && <div className="busy" role="status"><span className="spin" />{busy} — Approve in your wallet when prompted. A proof may run in the browser first; then we wait for confirmation on the network.{/18\+/.test(busy) && ' The 18+ age proof is a larger circuit: allow about 1–2 minutes.'}</div>}
+        {busy && <div className="busy" role="status"><span className="spin" />{busy}. Approve in your wallet when prompted. A proof may run in the browser first; then we wait for confirmation on the network.{/18\+/.test(busy) && ' The 18+ age proof is a larger circuit: allow about 1–2 minutes.'}</div>}
         {err && <div className="error" onClick={() => setErr(null)} role="alert">{err.slice(0, 300)}</div>}
         {evRoute !== null && <EventPage s={s} st={st} run={run} bump={bump} id={evRoute} openTickets={() => setTab('tickets')} />}
         {evRoute === null && tab === 'events' && <Events s={s} st={st} run={run} bump={bump} openEvent={openEventPage} />}
@@ -449,7 +449,7 @@ const ttName = (s: Session, id: bigint) => meta.get(`${s.contract}:tt:${id}`)?.n
 function NoContract({ s }: { s: Session }) {
   const sch = s.schema;
   return <div className="card empty"><h3>No CloakTix schema v{sch} contract on this network</h3>
-    <p className="muted">An organizer must deploy schema v{sch} first (at <code>/organizer?schema={sch}</code>), or open a <code>?schema={sch}&amp;contract=…</code> link. Each schema stores its addresses separately — an address of another schema will not open here.</p>
+    <p className="muted">An organizer must deploy schema v{sch} first (at <code>/organizer?schema={sch}</code>), or open a <code>?schema={sch}&amp;contract=…</code> link. Each schema stores its addresses separately. An address of another schema will not open here.</p>
     {s.contract && <code>{s.contract}</code>}
     <p style={{ marginTop: 18 }}><button className="primary" onClick={() => { location.assign(orgHref() + (orgHref().includes('?') ? '&' : '?') + 'schema=' + sch); }}>For organizers · deploy schema v{sch} →</button></p></div>;
 }
@@ -564,7 +564,7 @@ export function Events({ s, st, run, bump, openEvent }: P & { bump: (t: bigint, 
     </> : (visible.length > 0 ? <p className="muted small resale-quiet">No resale listings right now.</p> : null)}
     {resaleResult && <div className="card">{resaleResult.kind === 'ready'
       ? <TransferTicket cap={resaleResult.cap} />
-      : <><h3>Ticket #{String(resaleResult.receipt.serial)} purchased</h3><p>Preparation did not finish. Your purchase is kept — do not buy again.</p><p className="small muted">{resaleResult.error}</p><button disabled={resaleBusy} onClick={retryResalePrepare}>Prepare my ticket</button></>}</div>}
+      : <><h3>Ticket #{String(resaleResult.receipt.serial)} purchased</h3><p>Preparation did not finish. Your purchase is kept. Do not buy again.</p><p className="small muted">{resaleResult.error}</p><button disabled={resaleBusy} onClick={retryResalePrepare}>Prepare my ticket</button></>}</div>}
   </section>;
 }
 
@@ -714,7 +714,7 @@ function EventPage({ s, st, run, bump, id, openTickets }: P & { bump: (t: bigint
   return <div className="evpage">
     {adult && <AgeCheck s={s} run={run} />}
     <EventCard s={s} st={st} run={run} bump={bump} e={e} onBought={(r) => { setBoughtIx(0); setBought({ needsPrepare: !!r?.needsPrepare || r?.prepareOk === false, cap: isAdmitCapabilityV2(r?.cap) ? r.cap : undefined, caps: Array.isArray(r?.caps) ? r.caps.filter(isAdmitCapabilityV2) : undefined }); }} />
-    <EventInformation description={meta.get(`${s.contract}:ev:${id}`)?.description} rules={collapseDuplicateTypes(st.types.filter(t=>t.eventId===id),(x)=>ttName(s,x)).map(g=>g.primary).map(t=>`${ttName(s,t.id)}: ${Number(t.resale)===CAPPED&&s.schema===3?`capped resale — maximum ${formatPublishedUsd(t.maxResale.toString())}`:resaleLabel(t)}`)}/>
+    <EventInformation description={meta.get(`${s.contract}:ev:${id}`)?.description} rules={collapseDuplicateTypes(st.types.filter(t=>t.eventId===id),(x)=>ttName(s,x)).map(g=>g.primary).map(t=>`${ttName(s,t.id)}: ${Number(t.resale)===CAPPED&&s.schema===3?`capped resale, maximum ${formatPublishedUsd(t.maxResale.toString())}`:resaleLabel(t)}`)}/>
     {bought&&<PurchaseNextSteps/>}
     {bought?.caps && bought.caps.length > 1 ? <div className="card multi-bought">
       <h3>✓ {bought.caps.length} tickets bought</h3>
@@ -723,7 +723,7 @@ function EventPage({ s, st, run, bump, id, openTickets }: P & { bump: (t: bigint
       <TransferTicket key={boughtIx} cap={bought.caps[Math.min(boughtIx, bought.caps.length - 1)]} title={`Ticket ${Math.min(boughtIx, bought.caps.length - 1) + 1} of ${bought.caps.length} is ready`} details={meta.get(`${s.contract}:ev:${id}`) ?? {}} />
       <button className="ghost wide" onClick={openTickets}>View all in My tickets</button>
     </div> : bought?.cap ? <div className="card"><TransferTicket cap={bought.cap} details={meta.get(`${s.contract}:ev:${id}`) ?? {}} /></div> : bought && <div className="card done"><h3>✓ Ticket bought</h3><p className="muted">{bought.needsPrepare
-      ? 'Purchase landed, but preparing the phone admit link did not finish. Open My tickets to prepare it — do not buy again.'
+      ? 'Purchase landed, but preparing the phone admit link did not finish. Open My tickets to prepare it. Do not buy again.'
       : (v2 || s.schema === 3)
         ? 'It is in My tickets. Open it there to prepare or show the phone admit link.'
         : 'It is in My tickets. At the door, open it and tap “Show entry QR”.'}</p><button className="primary big" onClick={openTickets}>View my ticket</button></div>}
@@ -737,7 +737,7 @@ function AgeCheck({ s, run }: { s: Session; run: P['run'] }) {
   const status = s.ageStatus;
   useEffect(() => { const f = () => force((n) => n + 1); window.addEventListener(AGE_CHANGED_EVENT, f); return () => window.removeEventListener(AGE_CHANGED_EVENT, f); }, []);
   return <div className="card agecheck" id={AGE_CHECK_ANCHOR}><h3>Age check for 18+ tickets</h3>
-    <p className="muted">18+ tickets (primary and resale) require a zero-knowledge age proof. The contract only learns “adult: yes” — never your birthdate or the credential.</p>
+    <p className="muted">18+ tickets (primary and resale) require a zero-knowledge age proof. The contract only learns “adult: yes”, never your birthdate or the credential.</p>
     <p className="note">{AGE_NOTE}</p>
     <div className="row"><label>Birthdate<input type="date" value={birth} onChange={(e) => setBirth(e.target.value)} /></label>
       <button className="primary" onClick={async () => { await run('Get age credential', async () => { await s.getAgeCredential(birth); return {}; }); force((n) => n + 1); }}>Get demo age credential</button>
@@ -771,9 +771,9 @@ export function Organizer({ s, st, run, setBusy, onOrganize }: P & { onOrganize?
       {s.schema === 3
         ? <>
             <p className="muted">Deploy a <b>new</b> schema v3 contract (USD quotes, paid in NIGHT) on Midnight Preview with <b>your</b> 1AM wallet. The rate-signer public key is baked into the app. Does <b>not</b> touch live v2 <code>7fd12c11…</code>. Keep <code>?schema=2</code> for existing tickets.</p>
-            <p className="note">Block-limit safe: <b>{planV3DeploySteps().totalSteps} wallet confirmations</b> (1 create + verifier-key inserts). After each approval the app waits for on-chain inclusion before the next 1AM prompt (avoids “pending transaction”). If interrupted, click Deploy again — resume skips steps already on-chain.</p>
-            {s.contract ? <p className="note">This deploys a <b>new</b> contract. Existing events stay on the current address until the new one is wired in — do not create a replacement event until then.</p> : null}
-            {(() => { const p = loadV3DeployProgress(NETWORK); return p && p.status !== 'done' && p.address ? <p className="muted small">Resume available — step {p.step}/{p.totalSteps} ({p.message || p.status}).</p> : null; })()}
+            <p className="note">Block-limit safe: <b>{planV3DeploySteps().totalSteps} wallet confirmations</b> (1 create + verifier-key inserts). After each approval the app waits for on-chain inclusion before the next 1AM prompt (avoids “pending transaction”). If interrupted, click Deploy again. Resume skips steps already on-chain.</p>
+            {s.contract ? <p className="note">This deploys a <b>new</b> contract. Existing events stay on the current address until the new one is wired in. Do not create a replacement event until then.</p> : null}
+            {(() => { const p = loadV3DeployProgress(NETWORK); return p && p.status !== 'done' && p.address ? <p className="muted small">Resume available: step {p.step}/{p.totalSteps} ({p.message || p.status}).</p> : null; })()}
           </>
         : s.schema === 2
         ? <p className="muted">Deploy a <b>new</b> schema v2 contract on Midnight Preview with this 1AM wallet. Unique ticket serials + phone admit. This does <b>not</b> convert the existing v1 contract. Keep <code>?schema=1</code> for old tickets.</p>
@@ -783,7 +783,7 @@ export function Organizer({ s, st, run, setBusy, onOrganize }: P & { onOrganize?
       <button className="primary" onClick={() => run(s.schema === 3 ? 'Deploy schema v3 (batched)' : s.schema === 2 ? 'Deploy schema v2 contract (Preview)' : 'Deploy contract', async () => {
         if (s.schema === 3) {
           (s as any)._onDeployStep = (e: { step: number; totalSteps: number; label: string; detail?: string }) => {
-            setBusy?.(`${e.label}${e.detail ? ' — ' + e.detail : ''}`);
+            setBusy?.(`${e.label}${e.detail ? ': ' + e.detail : ''}`);
           };
         }
         try {
@@ -793,7 +793,7 @@ export function Organizer({ s, st, run, setBusy, onOrganize }: P & { onOrganize?
         }
         finally { if (s.schema === 3) (s as any)._onDeployStep = undefined; }
       })}>{s.schema === 3 ? `Deploy schema v3 (${planV3DeploySteps().totalSteps} steps)` : s.schema === 2 ? 'Deploy schema v2 (Preview)' : 'Deploy'}</button>
-      {deployedAddress ? <p className="note">New contract: <code style={{wordBreak:'break-all'}}>{deployedAddress}</code> — copy this full address and send it.</p> : null}
+      {deployedAddress ? <p className="note">New contract: <code style={{wordBreak:'break-all'}}>{deployedAddress}</code>. Copy this full address and send it.</p> : null}
       <p className="muted small" style={{marginTop:12}}>or paste a contract address for <b>this</b> schema only (v1 and v2 addresses stay separate)</p>
       <div className="row"><input placeholder="contract address" value={paste} onChange={(e) => setPaste(e.target.value)} /><button onClick={() => { s.setContract(paste.trim()); location.reload(); }}>Use</button></div>
     </div>}
@@ -911,7 +911,7 @@ function OrganizerTicketType({ s, st, run, eventId }: P & { eventId: bigint }) {
             }));
             return {...response,usdCents:quote.cents.toString(),maxResaleUsdCents:tt.resale==='0'&&cap.kind==='ready'?cap.cents.toString():undefined};
           });
-          if (r) { const publishedType={name:tt.name,usdCents:r.usdCents,resaleSummary:tt.resale==='0'?(r.maxResaleUsdCents?`Capped resale — maximum ${formatPublishedUsd(r.maxResaleUsdCents)}`:'Capped resale — maximum confirmed after connection'):tt.resale==='1'?'Unlimited resale':'No resale'}; meta.set(`${s.contract}:tt:${r.result}`, publishedType); const ok=await publishMeta(s, run, 'tt', r.result as bigint, publishedType); setListingMessage(ok?'Ticket options published. Live availability is confirmed after connection.':'Ticket type created on Midnight, but public ticket options could not be saved. Do not add a duplicate type.'); }
+          if (r) { const publishedType={name:tt.name,usdCents:r.usdCents,resaleSummary:tt.resale==='0'?(r.maxResaleUsdCents?`Capped resale, maximum ${formatPublishedUsd(r.maxResaleUsdCents)}`:'Capped resale, maximum confirmed after connection'):tt.resale==='1'?'Unlimited resale':'No resale'}; meta.set(`${s.contract}:tt:${r.result}`, publishedType); const ok=await publishMeta(s, run, 'tt', r.result as bigint, publishedType); setListingMessage(ok?'Ticket options published. Live availability is confirmed after connection.':'Ticket type created on Midnight, but public ticket options could not be saved. Do not add a duplicate type.'); }
         }}>Add ticket type</button></fieldset>
         {s.schema === 4 && <p className="note">Schema 4 is local-only. Ticket-type submission remains disabled until a separately authorized v4 deployment.</p>}
         {listingMessage && <p role="status" className="note">{listingMessage}</p>}
@@ -934,7 +934,7 @@ function EditDetails({ s, run, id }: { s: Session; run: Run; id: bigint }) {
     for(const type of state.types.filter(t=>t.eventId===id)){
       const cached=meta.get(`${s.contract}:tt:${type.id}`);
       const cents=s.schema===3?((type as {priceUsdCents?:bigint}).priceUsdCents??type.price).toString():cached?.usdCents;
-      const values:Record<string,string>={name:ttName(s,type.id),resaleSummary:Number(type.resale)===CAPPED?(s.schema===3?`Capped resale — maximum ${formatPublishedUsd(type.maxResale.toString())}`:'Capped resale — live maximum confirmed after connection'):Number(type.resale)===UNLIMITED?'Unlimited resale':'No resale'};
+      const values:Record<string,string>={name:ttName(s,type.id),resaleSummary:Number(type.resale)===CAPPED?(s.schema===3?`Capped resale, maximum ${formatPublishedUsd(type.maxResale.toString())}`:'Capped resale, live maximum confirmed after connection'):Number(type.resale)===UNLIMITED?'Unlimited resale':'No resale'};
       if(typeof cents==='string')values.usdCents=cents;
       const saved=await publishMeta(s,run,'tt',type.id,values);if(saved)meta.set(`${s.contract}:tt:${type.id}`,values);else allSaved=false;
     }
@@ -975,15 +975,15 @@ function Tickets({ s, st, run, owned, bump, passes, addPass, onBrowseEvents }: P
         <div className="tix-top"><img src="/brand/cloaktix_icon.svg" alt="" />{n > 1 && <span className="count">×{n}</span>}</div>
         <p className="kicker">{ttName(s, tid)}{t.adultOnly && <span className="tag age">18+</span>}</p>
         <h3 className="tix-ev">{evName(s, t.eventId)}</h3>
-        <p className="muted">{m?.date ?? '—'} · {m?.venue ?? '—'}</p>
+        <p className="muted">{m?.date ?? 'Date to be announced'} · {m?.venue ?? 'Venue to be announced'}</p>
         <div className="perf" />
         <button className="primary big wide" onClick={() => setAsk(tid)}>Show entry QR</button>
-        <p className="muted small center">Use it at the door — the QR works once.</p>
+        <p className="muted small center">Use it at the door. The QR works once.</p>
         {mode === NO_RESALE ? <p className="muted small center">Resale not allowed for this ticket.</p> : <details className="resell"><summary>Resell this ticket</summary>
           <div className="row"><input aria-label="Resale price in USD" placeholder="USD" value={p} onChange={(e) => setResale({ ...resale, [id]: e.target.value })} /><button disabled={over} onClick={async () => {
             const r = await run(`List for resale ${ttName(s, tid)}`, () => {const quote=quoteUsd(p,rates);if(quote.kind!=='ready')throw new Error(quote.message);const priceUnits=s.schema===3?quote.cents:quote.atoms;return s.call('listForResale', listForResaleArgs(s.schema,{serialOrTypeId:tid,priceUnits,feeAtoms:s.schema===3?0n:sdkOrThrow().feeOf(quote.atoms),payout:s.userAddress()}));}); if (r) bump(tid, -1);
           }}>List</button></div>
-          <p className={over ? 'warn small' : 'muted small'}>{mode === CAPPED ? <>Cap <Price amount={t.maxResale} /></> : 'No price cap'}{over ? ' — price above the cap' : ''}</p></details>}
+          <p className={over ? 'warn small' : 'muted small'}>{mode === CAPPED ? <>Cap <Price amount={t.maxResale} /></> : 'No price cap'}{over ? ', price above the cap' : ''}</p></details>}
       </div>;
     })}
     {passes.length > 0 && <><h2>Entry passes</h2>{passes.map((ps) => <div className="card passrow" key={ps.passId}>
@@ -1035,17 +1035,17 @@ function Gate({ s, st }: { s: Session; st: St }) {
     <h2>Check-in</h2>
     <div className="card gate">
       <label>Accepted ticket type<select value={accept} onChange={(e) => setAcc(e.target.value)}>
-        {buyerVisibleEvents(st.events, types, KEY_EVENTS).map((e) => [<option key={'e' + e.id} value={`e:${e.id}`}>{evName(s, e.id)} — any ticket type</option>,
-          ...types.filter((t) => t.eventId === e.id).map((t) => <option key={'t' + t.id} value={`t:${t.id}`}>{evName(s, e.id)} — {ttName(s, t.id)} only</option>)])}
+        {buyerVisibleEvents(st.events, types, KEY_EVENTS).map((e) => [<option key={'e' + e.id} value={`e:${e.id}`}>{evName(s, e.id)}: any ticket type</option>,
+          ...types.filter((t) => t.eventId === e.id).map((t) => <option key={'t' + t.id} value={`t:${t.id}`}>{evName(s, e.id)}: {ttName(s, t.id)} only</option>)])}
       </select></label>
       <p className="muted">Scan or paste the pass. Checks: on-chain <code>checkIns[passId]</code> exists (ticket burned), its ticket type is accepted here, the <code>checkIn</code> tx succeeded on this contract, and this gate has not admitted the pass before.</p>
       <div className="row"><input placeholder="cloaktix:pass:v1?…" value={code} onChange={(e) => setCode(e.target.value)} />
         <button className="primary" disabled={b || !code} onClick={() => verify()}>Verify</button>
-        <button onClick={() => { if (cameraScanSupported()) { setCam(true); setCamMsg(null); } else setCamMsg('Camera scanning is not available in this browser — paste the code instead.'); }}>Scan with camera</button></div>
+        <button onClick={() => { if (cameraScanSupported()) { setCam(true); setCamMsg(null); } else setCamMsg('Camera scanning is not available in this browser. Paste the code instead.'); }}>Scan with camera</button></div>
       {camMsg && <p className="warn small">{camMsg}</p>}
       {cam && <Scanner onClose={() => setCam(false)} onCode={(c) => { setCam(false); setCode(c); verify(c); }} />}
       {r && <div className={r.ok ? 'verdict ok' : 'verdict ko'}>{r.ok
-        ? <>✓ Admitted — {ttName(s, r.typeId)}<small>block {r.block} · pass {short(sdkOrThrow().decodePass(code)?.passId ?? '')} now consumed</small></>
+        ? <>✓ Admitted: {ttName(s, r.typeId)}<small>block {r.block} · pass {short(sdkOrThrow().decodePass(code)?.passId ?? '')} now consumed</small></>
         : <>✕ Refused<small>{r.reason}</small></>}</div>}
       <p className="muted small">Passes admitted at this gate: {admitted}</p>
     </div>
@@ -1069,7 +1069,7 @@ function InstallHelp() {
   return (
     <details className="card devices install-help">
       <summary>Install CloakTix on your phone</summary>
-      <p className="muted small">Add this site to your home screen for a standalone ticket wallet. Storage is per browser / install — iOS treats each home-screen install as its own storage. Open My tickets and use Send to phone to move a prepared ticket to another device.</p>
+      <p className="muted small">Add this site to your home screen for a standalone ticket wallet. Storage is per browser / install. iOS treats each home-screen install as its own storage. Open My tickets and use Send to phone to move a prepared ticket to another device.</p>
       <p className="muted small"><b>iPhone / iPad:</b> Safari Share → Add to Home Screen.</p>
       <p className="muted small"><b>Android:</b> Chrome menu → Install app / Add to Home screen.</p>
       <button type="button" disabled={checking} onClick={async()=>{setChecking(true);try{const result=await checkInstallAssets();setInstallStatus(result.message);}finally{setChecking(false);}}}>{checking?'Checking install files…':'Check install files'}</button>
@@ -1154,7 +1154,7 @@ export function HomeScreen({ connected, onBrowseEvents, onTickets, savedCount }:
       <div>
         <p className="kicker">Midnight · private tickets</p>
         <h1 id="home-title">Private tickets on <em>Midnight</em></h1>
-        <p>Buy, resell under the organizer's rules and get in with a single-use pass — without exposing your wallet. Zero-knowledge proofs are generated in your browser.</p>
+        <p>Buy, resell under the organizer's rules and get in with a single-use pass, without exposing your wallet. Zero-knowledge proofs are generated in your browser.</p>
         <p className="home-payment">Pay with NIGHT on Midnight only. Browse Events for organizer-published listings; connect to confirm live availability.</p>
         <TicketTrust/>
         <div className="cta-row">

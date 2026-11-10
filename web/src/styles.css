@@ -914,3 +914,20 @@ main:has(.event-create-form), main:has(.organizer-event-page) {
   .tix-page .ticket-list { grid-template-columns: 1fr; }
   .tix-page .ticket-list-copy { padding: 16px; font-size: 15px; }
 }
+
+/* CT-UI-NITS (2026-11-10) */
+/* The 18+ age gate holds a sentence plus a button. As an auto-sized flex item (CT-BUY-LAYOUT: flex 0 0 auto) its
+   max-content width took the whole row and squeezed the ticket name to one letter per line. Bound the gate, and keep
+   a readable minimum for the name column. */
+.ttype > .ticket-type-details,
+.card.event .ttype > .ticket-type-details { flex: 1 1 9rem; min-width: 7.5rem; }
+.ttype > .buy-action.age-gate,
+.card.event .ttype > .buy-action.age-gate { flex: 0 1 17rem; min-width: 0; justify-items: end; }
+.buy-action.age-gate > .note { margin: 0; text-align: left; }
+@media (max-width: 600px) {
+  .ttype { flex-wrap: wrap; }
+  .ttype > .buy-action.age-gate, .card.event .ttype > .buy-action.age-gate { flex-basis: 100%; justify-items: start; }
+}
+/* Market data links in checkout: readable violet on the dark dialog (browser default blue was too dark). */
+.market-data a { color: var(--acc3); text-decoration: underline; text-underline-offset: 2px; }
+.market-data a:hover, .market-data a:focus-visible { color: var(--tx); }

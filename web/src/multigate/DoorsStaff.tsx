@@ -18,7 +18,7 @@ export function useDoorNames(s: Session, gates: GateRow[], revision = 0) {
 export function StaffIdentity({ s, canEnroll = false }: { s: Session; canEnroll?: boolean }) {
   const [status, setStatus] = useState('');
   return <section className="card staff-identity" aria-label="Your staff ID"><h3>Your staff ID</h3>
-    <p className="muted">Use your own 1AM wallet. Give this public CloakTix account hash to the organizer — never your wallet address or a secret key.</p>
+    <p className="muted">Use your own 1AM wallet. Give this public CloakTix account hash to the organizer, never your wallet address or a secret key.</p>
     <div className="row"><code>{s.accountId}</code><button onClick={() => void navigator.clipboard.writeText(s.accountId).then(() => setStatus('Staff ID copied'), () => setStatus('Copy unavailable. Select the Staff ID above.'))}>Copy Staff ID</button></div>
     {canEnroll && <><p className="note">Enable staff mode once before assignment. This account will be check-in-only; it cannot create events, even after revocation. An organizer cannot enroll you without your consent.</p><button onClick={async () => { try { await s.call('registerStaff', []); setStatus('Staff mode confirmed. Give your Staff ID to the organizer.'); } catch { setStatus('Schema 4 is local-only. Staff enrollment requires a separately authorized v4 deployment and proving keys.'); } }}>Enable staff mode</button></>}
     {s.idSource === 'device' && <p className="note">This ID belongs to this browser identity. Keep this device connected for your shift; another device may have a different Staff ID.</p>}

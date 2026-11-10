@@ -9,7 +9,7 @@ export function formatNight(amount: bigint): string {
 }
 
 /** USD is the display currency; NIGHT is a reference equivalent only. */
-export function Price({ amount, usdCents, compactNight = false }: { amount?: bigint; usdCents?: string; compactNight?: boolean }) {
+export function Price({ amount, usdCents, compactNight = false, hideNight = false }: { amount?: bigint; usdCents?: string; compactNight?: boolean; /** CT-UI-NITS: checkout prints its own NIGHT line, so show USD only. */ hideNight?: boolean }) {
   const state = useRates();
   const historical = usdCents !== undefined && /^\d+$/.test(usdCents) ? Number(usdCents) / 100 : null;
   const usd = historical ?? (state.kind === 'ready' && amount !== undefined ? Number(amount) / 1_000_000 * state.rates.nightUsd : null);
@@ -17,8 +17,8 @@ export function Price({ amount, usdCents, compactNight = false }: { amount?: big
   const night = amount !== undefined ? (compactNight ? (Number(amount) / 1_000_000).toFixed(2) : formatNight(amount)) : (usd !== null && state.kind === 'ready' ? (usd / state.rates.nightUsd).toFixed(2) : null);
   return <span className="price">
     <span>{usd === null ? 'USD rate unavailable' : `$${usd.toFixed(2)} USD`}</span>
-    <small>{usd !== null && state.kind === 'ready' && night !== null
+    {!hideNight && <small>{usd !== null && state.kind === 'ready' && night !== null
       ? `≈ ${night} NIGHT`
-      : 'NIGHT rate unavailable'}</small>
+      : 'NIGHT rate unavailable'}</small>}
   </span>;
 }

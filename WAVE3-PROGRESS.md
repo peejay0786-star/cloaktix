@@ -70,6 +70,17 @@ Work earlier in Wave 3, including after the previous Preview chain, remains part
 
 Coming Soon on `cloaktix.com` was left unchanged through these publishes. The logo was not modified.
 
+## 10 November 2026 UI fixes
+
+On 10 November 2026, several buyer-facing UI fixes were implemented in the current app:
+
+1. The 18+ ticket type on Events and the event page uses a row layout so it stays readable on a phone.
+2. The 18+ checkout shows a single NIGHT amount, not a duplicated figure.
+3. Market data links are readable instead of a raw URL dump.
+4. Buyer-facing copy no longer uses em dashes.
+
+A Wave 3 deck v4 was also prepared from the current app visuals (`slides/cloaktix-deck-v4.pdf`).
+
 ## Honest leftover limits
 
 - The age issuer is still the demo Passport stub.

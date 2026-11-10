@@ -120,7 +120,7 @@ export function createRateClient({ fetcher = fetch, now = Date.now, storage }: {
 export type UsdQuote = { kind: 'ready'; cents: bigint; atoms: bigint } | { kind: 'unavailable'; message: string };
 export function quoteUsd(text: string, state: RateState): UsdQuote {
   if (!/^\d+(?:\.\d{0,2})?$/.test(text.trim())) return { kind: 'unavailable', message: 'Enter a USD price with at most 2 decimals.' };
-  if (state.kind !== 'ready' || Date.now()-state.rates.asOf>MAX_AGE) return { kind: 'unavailable', message: 'Rate unavailable — USD listing cannot be converted yet.' };
+  if (state.kind !== 'ready' || Date.now()-state.rates.asOf>MAX_AGE) return { kind: 'unavailable', message: 'Rate unavailable. USD listing cannot be converted yet.' };
   const [whole, fraction = ''] = text.trim().split('.');
   const cents = BigInt(whole) * 100n + BigInt(fraction.padEnd(2, '0'));
   const scaled = Math.round(state.rates.nightUsd * 100_000_000);

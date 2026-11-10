@@ -196,13 +196,13 @@ function LegacyGateV2({
           <select value={accept} onChange={(e) => setAcc(e.target.value)}>
             {st.events.map((e: any) => [
               <option key={'e' + e.id} value={`e:${e.id}`}>
-                {evName(s, e.id)} — any ticket type
+                {evName(s, e.id)}: any ticket type
               </option>,
               ...types
                 .filter((t: any) => t.eventId === e.id)
                 .map((t: any) => (
                   <option key={'t' + t.id} value={`t:${t.id}`}>
-                    {evName(s, e.id)} — {ttName(s, t.id)} only
+                    {evName(s, e.id)}: {ttName(s, t.id)} only
                   </option>
                 )),
             ])}
@@ -243,7 +243,7 @@ function LegacyGateV2({
           <div className={r.ok ? 'verdict ok' : 'verdict ko'}>
             {r.ok ? (
               <>
-                ✓ Admitted — {ttName(s, r.typeId)}
+                ✓ Admitted: {ttName(s, r.typeId)}
                 <small>
                   serial {String(r.serial)} · tx {String(r.txId).slice(0, 12)}…
                 </small>

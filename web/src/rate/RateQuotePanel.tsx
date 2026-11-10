@@ -33,7 +33,7 @@ export function RateQuotePanel({ usdCents, nightUsd, ttlSec = 180, onExpired }: 
     }, 1000);
     return () => clearInterval(id);
   }, [quote, nightUsd, usdCents, ttlSec, onExpired]);
-  if (nightUsd == null) return <p role="status" className="warn">Rate unavailable — NIGHT quote paused.</p>;
+  if (nightUsd == null) return <p role="status" className="warn">Rate unavailable. NIGHT quote paused.</p>;
   if (!quote) return null;
   return <section className="rate-quote-panel" aria-live="polite">
     <h3>Live NIGHT quote</h3>

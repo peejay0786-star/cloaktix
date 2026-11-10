@@ -24,7 +24,7 @@ export async function registerSerialAdmitV4(host: Host, serial: bigint, meta?: M
 export async function admitSerialV4(host: Host, text: string, gateId: bigint): Promise<AdmitVerdict> {
   const refuse = (reason: string): AdmitVerdict => ({ ok: false, reason });
   const cap = decodeAdmitQr(text.trim());
-  if (!cap) return refuse('Bad QR — not a CloakTix admission code');
+  if (!cap) return refuse('Bad QR: not a CloakTix admission code');
   if (cap.networkId !== host.networkId) return refuse('Wrong network');
   if (!host.contract || cap.contract !== host.contract) return refuse('Wrong event contract');
   try {
@@ -33,9 +33,9 @@ export async function admitSerialV4(host: Host, text: string, gateId: bigint): P
     const gate = state.gates.find(g => g.id === gateId);
     if (!gate || !gate.active || (!gate.mine && !gate.assigned)) return refuse('Unauthorized or revoked staff, or inactive door');
     const row = state.tickets.find(t => t.serial === BigInt(cap.serial));
-    if (!row) return refuse('Bad QR — unknown ticket');
+    if (!row) return refuse('Bad QR: unknown ticket');
     if (row.status === TicketStatusV4.consumed) return refuse('Already used');
-    if (row.status !== TicketStatusV4.owned) return refuse('Replaced copy — ticket is not owned');
+    if (row.status !== TicketStatusV4.owned) return refuse('Replaced copy: ticket is not owned');
     const type = state.types.find(t => t.id === row.typeId);
     if (!type || !doorAccepts(gate, type)) return refuse('Wrong ticket type for this door');
     if (!row.hasAdmit || String(row.epoch) !== cap.epoch) return refuse('Replaced copy');

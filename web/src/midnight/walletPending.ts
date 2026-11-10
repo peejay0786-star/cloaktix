@@ -28,7 +28,7 @@ export async function withPendingRetry<T>(
     } catch (e) {
       last = e;
       if (!isPendingTxWalletError(e) || attempt === maxAttempts) throw e;
-      onWait(`${label}: wallet still has a pending transaction — waiting before retry (${attempt}/${maxAttempts})…`);
+      onWait(`${label}: wallet still has a pending transaction, waiting before retry (${attempt}/${maxAttempts})…`);
       await sleep(5_000 + attempt * 1_500);
     }
   }

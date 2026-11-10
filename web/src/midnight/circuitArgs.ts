@@ -123,6 +123,6 @@ export function v3NightAmounts(usdCents: bigint, atomsPerUsdCent: bigint, feeBps
 /** Choose a circuit `now` inside the signed window (tolerates small client clock skew). */
 export function nowInWindow(issuedAt: bigint, expiresAt: bigint, nowSec = BigInt(Math.floor(Date.now() / 1000))): bigint {
   const now = nowSec < issuedAt ? issuedAt : nowSec;
-  if (now > expiresAt) throw new Error('Signed quote/attestation expired — retry to get a fresh one.');
+  if (now > expiresAt) throw new Error('Signed quote/attestation expired. Retry to get a fresh one.');
   return now;
 }

@@ -29,10 +29,12 @@ export function parseEventDetails(v: unknown): EventDetails | null {
   if (typeof v.name !== 'string' || typeof v.date !== 'string' || typeof v.venue !== 'string' || typeof v.cover !== 'string' || typeof v.description !== 'string') return null;
   return {name:v.name.trim(),date:v.date,venue:v.venue.trim(),cover:v.cover,description:v.description.trim(),demoArt:DEMO_COVERS.includes(v.cover)?'true':'false'};
 }
+/** CT-UI-NITS: older published summaries used an em-dash ("Capped resale — maximum …"); show them with a comma. */
+export function plainDashes(text: string): string { return text.replace(/\s*[—–]\s*/g, ', '); }
 export function parseListingType(v: unknown): ListingType | null {
   if (!isRecord(v) || typeof v.id !== 'string' || !/^\d{1,19}$/.test(v.id) || !text(v.name,1,80) || !text(v.resaleSummary,1,180)) return null;
   if (v.usdCents !== undefined && (typeof v.usdCents !== 'string' || !/^\d{1,12}$/.test(v.usdCents))) return null;
-  return {id:v.id,name:v.name.trim(),...(typeof v.usdCents==='string'?{usdCents:v.usdCents}:{}),resaleSummary:v.resaleSummary};
+  return {id:v.id,name:v.name.trim(),...(typeof v.usdCents==='string'?{usdCents:v.usdCents}:{}),resaleSummary:plainDashes(v.resaleSummary)};
 }
 export function parsePublishedCatalog(v: unknown): PublishedCatalog | null {
   if (!isRecord(v) || v.source !== 'organizer-published' || typeof v.contract !== 'string' || !/^[0-9a-f]{64}$/.test(v.contract) || !Array.isArray(v.events) || v.events.length>200) return null;

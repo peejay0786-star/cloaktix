@@ -15,7 +15,7 @@ export function TransferTicket({ cap, details = {}, showPrint = true, title = 'Y
   return <div className="center">
     <h3>{title}</h3>
     <Qr text={url} size={Math.min(300, window.innerWidth - 64)} />
-    <p>Scan with your phone’s Camera and tap the link. Open your ticket, then tap Save ticket to keep a PNG on your phone — no wallet needed.</p>
+    <p>Scan with your phone’s Camera and tap the link. Open your ticket, then tap Save ticket to keep a PNG on your phone. No wallet needed.</p>
     {showPrint && <button onClick={() => printTicket(cap, details, setStatus)}>Print ticket</button>}
     <button onClick={copy}>Copy ticket link</button>
     <details><summary>Ticket link</summary><input aria-label="Private ticket link" readOnly value={url} onFocus={(e) => e.target.select()} /></details>

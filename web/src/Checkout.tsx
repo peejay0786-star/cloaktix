@@ -44,7 +44,7 @@ export function CheckoutPanel({ amount, usdCents, onPay, busy = false, error = '
   const nightLabel = usdCents === undefined ? `${formatNight(amount)} NIGHT` : (state.kind === 'ready' && usd !== null ? `≈ ${(usd / state.rates.nightUsd).toFixed(2)} NIGHT (exact amount locked by a signed quote when you pay)` : 'NIGHT rate unavailable');
   return <section className="checkout-panel"><h2>Checkout</h2>
     {onQty && usdCents !== undefined && <QtyPicker qty={qty} max={maxQty} onChange={onQty} disabled={busy} />}
-    {usdCents !== undefined ? <Price usdCents={String(usdCents)} /> : <Price amount={amount} />}
+    {usdCents !== undefined ? <Price usdCents={String(usdCents)} hideNight /> : <Price amount={amount} hideNight />}
     <p className={usdCents !== undefined ? 'payment-night' : 'payment-amount'}>{nightLabel}</p>
     <p role="status" className="note">Pay from your Midnight wallet. NIGHT on Cardano isn&apos;t accepted.</p>
     <p className="small muted">NIGHT on Midnight only. After payment, find your pass in My tickets to print, show QR or Send to phone.</p>
@@ -53,7 +53,7 @@ export function CheckoutPanel({ amount, usdCents, onPay, busy = false, error = '
     <button type="button" className="primary big" disabled={busy || !!error} onClick={() => { if (!busy) onPay(); }}>
       {busy ? 'Processing…' : 'Pay with NIGHT on Midnight'}
     </button>
-    <p className="small muted">Market data: <a href="https://www.coingecko.com/" target="_blank" rel="noreferrer">CoinGecko</a> · <a href="https://www.kraken.com/" target="_blank" rel="noreferrer">Kraken</a></p>
+    <p className="small muted market-data">Market data: <a href="https://www.coingecko.com/" target="_blank" rel="noreferrer">CoinGecko</a> · <a href="https://www.kraken.com/" target="_blank" rel="noreferrer">Kraken</a></p>
   </section>;
 }
 

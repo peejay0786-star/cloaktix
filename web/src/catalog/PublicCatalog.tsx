@@ -21,7 +21,7 @@ export function usePublicCatalog(contract:string|null, initial?:CatalogState){
   return {state,reload:()=>setAttempt(n=>n+1)};
 }
 export function TicketTrust(){return <p className="ticket-trust">NIGHT on Midnight is the only payment method. After payment, open My tickets to find your pass, print, show QR or Send to phone.</p>;}
-export function PurchaseNextSteps(){return <div className="purchase-next"><h3>Find your ticket in My tickets</h3><p>Open your ticket there to print, show QR or Send to phone. If preparation is pending, finish it there — do not buy again.</p><a href="#tickets">Open My tickets →</a></div>;}
+export function PurchaseNextSteps(){return <div className="purchase-next"><h3>Find your ticket in My tickets</h3><p>Open your ticket there to print, show QR or Send to phone. If preparation is pending, finish it there, and do not buy again.</p><a href="#tickets">Open My tickets →</a></div>;}
 export function PublishedListings({state,onConnect,onOpenEvent}:{state:CatalogState;onConnect:()=>void;onOpenEvent?:(id:bigint,contract?:string)=>void}){
   if(state.kind==='loading')return <p className="catalog-state" role="status">Loading organizer-published listings…</p>;
   if(state.kind==='unavailable')return <p className="catalog-state" role="status">{state.message}</p>;

@@ -124,7 +124,7 @@ async function waitForCircuitsOnChain(
     const missing = [...need].filter((id) => !have.has(id));
     if (missing.length === 0) {
       // Extra beat so the wallet can clear its pending queue after indexer sees the tx.
-      opts.onWait?.('On-chain confirmation seen — clearing wallet pending queue…');
+      opts.onWait?.('On-chain confirmation seen, clearing wallet pending queue…');
       await sleep(4_000);
       return;
     }
@@ -245,7 +245,7 @@ export async function deployV3Batched(
   }
 
   if (!progress.address) {
-    notify(1, `Step 1/${totalSteps} — Deploy contract`, `Confirm in 1AM: create contract with ${plan.deployCircuits.length} verifier keys.`);
+    notify(1, `Step 1/${totalSteps}: Deploy contract`, `Confirm in 1AM: create contract with ${plan.deployCircuits.length} verifier keys.`);
     progress.status = 'deploying';
     progress.step = 1;
     progress.message = 'Waiting for 1AM deploy confirmation…';
@@ -280,7 +280,7 @@ export async function deployV3Batched(
             ],
           } as any),
         ),
-      (detail) => notify(1, `Step 1/${totalSteps} — Deploy contract`, detail),
+      (detail) => notify(1, `Step 1/${totalSteps}: Deploy contract`, detail),
     );
 
     const address = d.deployTxData.public.contractAddress as string;
@@ -292,14 +292,14 @@ export async function deployV3Batched(
     progress.pending = deferredIds;
     progress.status = progress.pending.length ? 'inserting' : 'done';
     progress.updatedAt = Date.now();
-    progress.message = 'Deploy submitted — waiting for inclusion…';
+    progress.message = 'Deploy submitted, waiting for inclusion…';
     saveV3DeployProgress(host.networkId, progress, storage);
     // deployContract stored the key under the new address; make sure, then drop the pending copy.
     if (!(await host.P.privateStateProvider.getSigningKey(address))) await host.P.privateStateProvider.setSigningKey(address, signingKey);
     clearPendingDeployKey(host.networkId, storage);
 
     await doWait(host.P.publicDataProvider, address, plan.deployCircuits, {
-      onWait: (detail) => notify(1, `Step 1/${totalSteps} — Waiting for confirmation…`, detail),
+      onWait: (detail) => notify(1, `Step 1/${totalSteps}: Waiting for confirmation…`, detail),
     });
     progress.message = 'Deploy included on-chain';
     saveV3DeployProgress(host.networkId, progress, storage);
@@ -319,7 +319,7 @@ export async function deployV3Batched(
     progress.step = totalSteps;
     progress.message = 'Schema v3 deploy complete';
     saveV3DeployProgress(host.networkId, progress, storage);
-    notify(totalSteps, `Done — all verifier keys on-chain`, `Contract ${address.slice(0, 12)}…`);
+    notify(totalSteps, `Done: all verifier keys on-chain`, `Contract ${address.slice(0, 12)}…`);
     return { address, txIds, steps: totalSteps };
   }
 
@@ -332,12 +332,12 @@ export async function deployV3Batched(
   for (const batch of batches) {
     notify(
       step,
-      `Step ${step}/${totalSteps} — Install verifier keys`,
+      `Step ${step}/${totalSteps}: Install verifier keys`,
       `Confirm in 1AM: insert ${batch.join(', ')}.`,
     );
     progress.status = 'inserting';
     progress.step = step;
-    progress.message = `Waiting for 1AM — ${batch.join(', ')}`;
+    progress.message = `Waiting for 1AM: ${batch.join(', ')}`;
     saveV3DeployProgress(host.networkId, progress, storage);
 
     for (const circuitId of batch) {
@@ -361,16 +361,16 @@ export async function deployV3Batched(
             circuitId as any,
             vk as any,
           ),
-        (detail) => notify(step, `Step ${step}/${totalSteps} — Waiting for confirmation…`, detail),
+        (detail) => notify(step, `Step ${step}/${totalSteps}: Waiting for confirmation…`, detail),
       );
       // Midnight.js 5: Ledger9FinalizedMaintenanceTxData = { era, public: FinalizedTxData }.
       const fin = finalized as unknown as { txId?: string; public?: { txId?: string } };
       txIds.push((fin.public?.txId ?? fin.txId) as string);
-      progress.message = `Submitted ${circuitId} — waiting for inclusion…`;
+      progress.message = `Submitted ${circuitId}, waiting for inclusion…`;
       saveV3DeployProgress(host.networkId, progress, storage);
 
       await doWait(host.P.publicDataProvider, address, [circuitId], {
-        onWait: (detail) => notify(step, `Step ${step}/${totalSteps} — Waiting for confirmation…`, detail),
+        onWait: (detail) => notify(step, `Step ${step}/${totalSteps}: Waiting for confirmation…`, detail),
       });
 
       progress.done = [...new Set([...progress.done, circuitId])];
@@ -387,7 +387,7 @@ export async function deployV3Batched(
   progress.pending = [];
   progress.updatedAt = Date.now();
   saveV3DeployProgress(host.networkId, progress, storage);
-  notify(totalSteps, `Done — ${totalSteps} wallet confirmation(s)`, `Contract ${address.slice(0, 12)}…`);
+  notify(totalSteps, `Done: ${totalSteps} wallet confirmation(s)`, `Contract ${address.slice(0, 12)}…`);
 
   return { address, txIds, steps: totalSteps };
 }

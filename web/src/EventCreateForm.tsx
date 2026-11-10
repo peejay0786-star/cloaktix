@@ -62,7 +62,7 @@ export function EventCreateForm({ network, initial, onSubmit, busy=false }: { ne
     <EventDetailsFields value={ev} onChange={v=>{setSubmitError('');setEv({...v,nightPayout:ev.nightPayout});}} />
     <fieldset className="payout-fields"><legend>NIGHT payout address (organizer only)</legend>
       <p id="night-payout-permanent" className="note payout-permanent-note" role="note">This address will receive NIGHT payments for this event. <strong>It cannot be changed after the event is created.</strong> Check it carefully before creating the event.</p>
-      <p className="small muted">Required for NIGHT settlement on Midnight. Stored privately — never shown to buyers.</p>
+      <p className="small muted">Required for NIGHT settlement on Midnight. Stored privately, never shown to buyers.</p>
       <label>NIGHT payout address (Midnight network)<input aria-label="NIGHT payout address on Midnight" aria-invalid={night.kind==='invalid'&&!!ev.nightPayout} aria-describedby="night-payout-permanent night-payout-help night-payout-err" placeholder={network==='mainnet'?'mn_addr1…':`mn_addr_${network}1…`} value={ev.nightPayout} onChange={e=>{setSubmitError('');setEv({...ev,nightPayout:e.target.value});}} autoComplete="off" spellCheck={false} required /></label>
       <p id="night-payout-help" className="small muted">Must be a Midnight address (mn_addr…). NIGHT on Midnight is the only payment method.</p>
       {night.kind==='invalid'&&ev.nightPayout&&<p id="night-payout-err" role="alert" className="warn">{night.message}</p>}

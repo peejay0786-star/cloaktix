@@ -220,7 +220,7 @@ export class Session {
       return r;
     }
     if (this.schema === 2) {
-      if (circuitId === 'checkIn') throw new Error('v2 schema: checkIn removed — use admit (organizer gate)');
+      if (circuitId === 'checkIn') throw new Error('v2 schema: checkIn removed. Use admit (organizer gate)');
       const r = await v2.callV2(this as any, circuitId, args);
       console.log(`[t] ${new Date().toISOString().slice(11, 23)} call ${circuitId} total ${r.ms} ms`);
       return r;
