@@ -399,12 +399,34 @@ function BuyerApp() {
         />}</>
       )}
 
-      {picker && <Dialog label="Connect a Midnight wallet" onClose={()=>setPicker(false)}><div className="card">
+      {picker && <Dialog label="Connect a Midnight wallet" onClose={()=>setPicker(false)}><div className="card connect-card">
         <h3>Connect a Midnight wallet</h3>
-        {wallets.length === 0 && <p className="muted">No wallet detected. Install 1AM (recommended) or Lace, then reload the page.</p>}
+        {wallets.length === 0 && <>
+          <p className="muted">No wallet found in this browser. To pay in NIGHT and keep a private pass, CloakTix uses 1AM, the recommended Midnight wallet.</p>
+          <div className="connect-get">
+            <span className="connect-get-logo" aria-hidden="true">1AM</span>
+            <div>
+              <b>1AM wallet</b>
+              <small>Official site · 1am.xyz</small>
+            </div>
+            <a className="primary" href="https://1am.xyz/" target="_blank" rel="noopener noreferrer">Get 1AM</a>
+          </div>
+          <p className="connect-alt">
+            <a href="https://chromewebstore.google.com/detail/1am/bphnkdkcnfhompoegfpgnkidcjfbojjp" target="_blank" rel="noopener noreferrer">Chrome extension</a>
+            <span className="small muted">Already installed? Reload this page.</span>
+          </p>
+        </>}
         {wallets.map((w) => <button key={w.rdns} className="wallet" onClick={() => connect(w)}>
           {w.icon && <img src={w.icon} alt="" />}<span>{w.name}</span>{w.dev ? <em>devnet</em> : /1am/i.test(w.name) ? <em>recommended</em> : null}</button>)}
-        <p className="fine">1AM first, Lace as a fallback. This site never asks for a password or a key.</p>
+        <div className="connect-phone">
+          <h4>On your phone?</h4>
+          <ol>
+            <li><div>Install 1AM <span className="muted">from the App Store or Google Play (<a href="https://1am.xyz/mobile" target="_blank" rel="noopener noreferrer">1am.xyz/mobile</a>).</span></div></li>
+            <li><div>Open app.cloaktix.com <span className="muted">in 1AM, from the Discover tab.</span></div></li>
+            <li><div>Connect and approve <span className="muted">in 1AM. Your pass appears in My tickets.</span></div></li>
+          </ol>
+        </div>
+        <p className="fine">CloakTix never asks for a password, a recovery phrase or a key.</p>
         <button type="button" className="ghost wide" onClick={()=>setPicker(false)}>Close</button>
       </div></Dialog>}
 
