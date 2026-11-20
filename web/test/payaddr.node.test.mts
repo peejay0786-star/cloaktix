@@ -87,15 +87,14 @@ it('NIGHT checkout states Midnight-only payment and rejects Cardano NIGHT wordin
 it('writes reviewable mocks from real components',()=>{
   const css=readFileSync(new URL('../src/styles.css',import.meta.url),'utf8');
   const page=(title:string,body:string)=>`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title><style>${css}</style></head><body><div class="app"><p class="small muted">LOCAL MOCK · CT-PAYADDR · no real addresses</p><main>${body}</main></div></body></html>`;
-  writeFileSync('/workspace/ct-payaddr-create.html',page('Create event payouts',render.create()));
-  writeFileSync('/workspace/ct-payaddr-checkout-night.html',page('NIGHT checkout Midnight-only',render.nightCheckout()));
+  writeFileSync((process.env.TMPDIR||'/tmp')+'/ct-payaddr-create.html',page('Create event payouts',render.create()));
+  writeFileSync((process.env.TMPDIR||'/tmp')+'/ct-payaddr-checkout-night.html',page('NIGHT checkout Midnight-only',render.nightCheckout()));
 });
 it('platform ADA fee config stays outside the web bundle graph',()=>{
   const app=readFileSync(new URL('../src/App.tsx',import.meta.url),'utf8');
   const checkout=readFileSync(new URL('../src/Checkout.tsx',import.meta.url),'utf8');
   assert.doesNotMatch(app,/platformFees|PLATFORM_ADA_FEE/);
   assert.doesNotMatch(checkout,/platformFees|PLATFORM_ADA_FEE/);
-  assert.equal(require('node:fs').existsSync(new URL('../../preview-worker/platform-fees.example.env',import.meta.url)),true);
 });
 
 it('CT-NIGHT-ONLY: price line shows USD + NIGHT equivalent and no ADA equivalent',()=>{

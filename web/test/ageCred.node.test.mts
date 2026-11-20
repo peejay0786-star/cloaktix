@@ -7,7 +7,7 @@ import { pathToFileURL } from 'node:url';
 import { adultBuyBlock, ageStatusFor, assertCanProveAdult, AgeCredentialRequiredError, humanizeAgeError, parseCredential } from '../src/midnight/ageCredential.ts';
 import { humanizeTxError } from '../src/txError.ts';
 
-const P = '/workspace/midnight-pass/cloaktix';
+const P = new URL('../..', import.meta.url).pathname.replace(/\/$/, '');
 const require = createRequire(import.meta.url);
 const rt: any = await import(pathToFileURL(require.resolve('@midnight-ntwrk/compact-runtime', { paths: [P + '/web'] })).href);
 const { Contract, ledger, pureCircuits }: any = await import(P + '/contract/managed/cloaktix-rate-v3/contract/index.js');

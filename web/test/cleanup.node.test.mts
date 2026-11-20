@@ -71,7 +71,7 @@ it('renders four reviewable mock pages from real production components, without 
  const asset=(path:string)=>{try{return 'data:image/'+(path.endsWith('.svg')?'svg+xml':'webp')+';base64,'+readFileSync(new URL('../public'+path,import.meta.url)).toString('base64');}catch{return path;}};
  const page=(body:string)=>'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CloakTix · local mock</title><style>'+css+'</style></head><body><div class="app"><p class="small muted">LOCAL MOCK · synthetic data · not a real ticket</p><main>'+body.replace(/src="(\/(?:art|brand)\/[^\"]+)"/g,(_,path)=>'src="'+asset(path)+'"')+'</main></div></body></html>';
  const screens={home:render.home(),event:render.event(session,state),list:render.list([item]),detail:render.detail(item)};
- for(const [name,html] of Object.entries(screens)){assert.doesNotMatch(html,/cdcdcd|nonceHex|cloaktix:admit/);writeFileSync('/workspace/ct-clean-'+name+'.html',page(html));}
+ for(const [name,html] of Object.entries(screens)){assert.doesNotMatch(html,/cdcdcd|nonceHex|cloaktix:admit/);writeFileSync((process.env.TMPDIR||'/tmp')+'/ct-clean-'+name+'.html',page(html));}
 });
 
 it('synchronous action gate prevents same-tick duplicate wallet submissions',async()=>{

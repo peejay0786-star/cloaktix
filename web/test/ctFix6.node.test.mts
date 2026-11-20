@@ -37,8 +37,8 @@ it('real list/detail render has list only first, exactly three prepared detail a
  // Reviewable synthetic DOM artifacts (no real capabilities embedded in this initial list/detail markup).
  const styles=readFileSync(new URL('../src/styles.css',import.meta.url),'utf8');
  const page=(body:string)=>'<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>'+styles+'</style></head><body><div class="app"><main>'+body+'</main></div></body></html>';
- writeFileSync('/workspace/ct-fix6-list-mock.html',page(list));
- writeFileSync('/workspace/ct-fix6-detail-mock.html',page(detail));
+ writeFileSync((process.env.TMPDIR||'/tmp')+'/ct-fix6-list-mock.html',page(list));
+ writeFileSync((process.env.TMPDIR||'/tmp')+'/ct-fix6-detail-mock.html',page(detail));
 });
 it('picker opening rescans and connecting status is outside connected-only main',()=>{
  const source=readFileSync(new URL('../src/App.tsx',import.meta.url),'utf8');assert.match(source,/setWallets\(discoverWallets\(\)\); setPicker\(true\)/);

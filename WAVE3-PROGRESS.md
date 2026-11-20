@@ -1,8 +1,8 @@
-# Progress during Wave 3
+# Progress during Wave 3 and after
 
 A draft write-up of what CloakTix actually did during Midnight Buildathon Wave 3. Dates use America/Toronto. This is not a marketing page. It only records work that was implemented, published, or confirmed live.
 
-CloakTix is a private ticketing app on Midnight Preview. Buyers pay in NIGHT, with prices shown in USD and a NIGHT equivalent. The wallet is 1AM. The live contract is `b92733389b1955c913dec004df708a12697df4a962ffab5dbde1e88f574ab04e`.
+CloakTix is a private ticketing app on Midnight Preview. Buyers pay in NIGHT, with prices shown in USD and a NIGHT equivalent. The wallet is 1AM. During Wave 3 the live contract was rate-v3 `b92733389b1955c913dec004df708a12697df4a962ffab5dbde1e88f574ab04e`. Since 19 November 2026 the main contract is EGG-40 `7f6481e3bec6b778db7b5959837ab82a5ffe47468f56aab4bfc4bdc56830d372` (see the last section). The README describes the current state.
 
 ## Ledger 9 migration
 
@@ -90,13 +90,29 @@ The app at https://app.cloaktix.com was opened to the public (Cloudflare Access 
 
 CloakTix Launch Night (event 3) is the organizer-published event in the public catalog. The 18+ flow still uses the demo Passport stub issuer, which is now publicly reachable. It is not a real ID check.
 
-## Honest leftover limits
+## Honest leftover limits (end of Wave 3)
 
 - The age issuer is still the demo Passport stub.
-- Multi-door remains fail-closed.
+- Multi-door remained fail-closed during Wave 3 (doors came with EGG-40, below).
 - Resale and check-in were not end-to-end verified with 1AM on contract `b92733` during this period.
 - Payments are unshielded NIGHT (pseudonymous, not shielded).
 - The app is a prototype and is not audited.
 - In-tab proving is still tens of seconds per `buyTicket` proof.
 
-This file is a draft for the Wave 3 progress write-up. It can be edited before any public submission.
+## After Wave 3: EGG-40 contract and door check-in (19 November 2026)
+
+- The owner deployed the EGG-40 contract `7f6481e3…d372` with 1AM. It keeps the rate-v3 purchase model (NIGHT only,
+  signed USD quotes, now up to 300 s old, 3% fee, 18+ check, resale rules) and adds door keys (`authorizeDoorKey`,
+  `revokeDoorKey`) and batch door settlement (`admitByDoor4`). Event 1 is CloakTix Launch Night (doors Dec 12, 2026).
+- The public catalog decodes EGG-40 events and ticket types, and the app switched to the EGG-40 contract.
+- The door relay (`door-relay/`) went live. Every write is checked against the EGG-40 contract state read from the
+  public indexer. Organizer routes need a signature from the organizer key bound on-chain.
+- Approving a staff phone now shows its steps (Building proof with a timer, then Approve in your wallet), and errors
+  show inside the dialog. Staff key ids that the contract cannot accept are refused before the wallet opens.
+- The staff phone reads tickets on-chain through the app's same-origin indexer proxy. Before this fix, every ticket
+  showed "Not for this event".
+- Checkout shows the buy steps (proof, wallet, confirmation) with errors in the dialog.
+- A scan before the door key's window now says "Door not open yet" (ticket checked, nothing recorded) instead of
+  "replaced".
+- Confirmed live on Preview: a staff phone approved on-chain, a Launch Night ticket scanned Valid, then Already used.
+  On-chain settlement after a real event has not been run yet.

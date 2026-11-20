@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url';
 import { networkTagBytes, contractAddressStruct } from '../src/midnight/schema.ts';
 
 const require = createRequire(import.meta.url);
-const rtPath = require.resolve('@midnight-ntwrk/compact-runtime', { paths: ['/workspace/midnight-pass/cloaktix/web'] });
+const rtPath = require.resolve('@midnight-ntwrk/compact-runtime', { paths: [new URL('..', import.meta.url).pathname] });
 const { pureCircuits } = await import('../../contract/managed/cloaktix-v2/contract/index.js');
 
 describe('admit domain binding helpers', () => {

@@ -24,7 +24,7 @@ it('Activity defaults collapsed and compact sizing is independent from ticket pr
  // Portable mock from the real component renderer and existing nonsecret art asset.
  const image='data:image/webp;base64,'+readFileSync(new URL('../public/art/neon-nights.webp',import.meta.url)).toString('base64');
  const body=render.list([{...ticket,cover:image}]);
- writeFileSync('/workspace/ct-fix7-list-mock.html','<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>'+css+'</style></head><body><div class="app has-activity"><main>'+body+'<details class="activity"><summary>Activity <span class="muted">· 1 update</span></summary><div class="activity-body">Synthetic preview only</div></details></main></div></body></html>');
+ writeFileSync((process.env.TMPDIR||'/tmp')+'/ct-fix7-list-mock.html','<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>'+css+'</style></head><body><div class="app has-activity"><main>'+body+'<details class="activity"><summary>Activity <span class="muted">· 1 update</span></summary><div class="activity-body">Synthetic preview only</div></details></main></div></body></html>');
 });
 
 it('card copy fully wraps with no ellipsis, line clamp or fixed text height',()=>{

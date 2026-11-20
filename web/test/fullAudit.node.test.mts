@@ -70,10 +70,10 @@ it('audit: writes before/after review mocks',()=>{
   const page=(title:string,body:string)=>'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+title+'</title><style>'+css+'</style></head><body><div class="app"><p class="small muted">LOCAL MOCK · CT-FULL-AUDIT · synthetic</p><main>'+body.replace(/src="\/art\/[^\"]+"/g,'src="'+art+'"')+'</main></div></body></html>';
   const s={schema:2,contract:'ab'.repeat(32),networkId:'preview'};
   const st={schemaVersion:2,events:[{id:1n,mine:false,open:true,isKey:false}],types:[{id:1n,eventId:1n,price:200_000_000n,fee:6_000_000n,supply:100n,sold:1n,resale:0,maxResale:240_000_000n,adultOnly:false}],listings:[],held:{},checkIns:new Map()};
-  writeFileSync('/workspace/ct-audit-home.html',page('Audit home',render.home()));
-  writeFileSync('/workspace/ct-audit-event.html',page('Audit event',render.event(s,st)));
-  writeFileSync('/workspace/ct-audit-checkout.html',page('Audit checkout',render.checkout()));
-  writeFileSync('/workspace/ct-audit-create.html',page('Audit create',render.create()));
-  writeFileSync('/workspace/ct-audit-tickets.html',page('Audit tickets',render.list([item])));
-  writeFileSync('/workspace/ct-audit-ticket-detail.html',page('Audit ticket detail',render.detail(item)));
+  writeFileSync((process.env.TMPDIR||'/tmp')+'/ct-audit-home.html',page('Audit home',render.home()));
+  writeFileSync((process.env.TMPDIR||'/tmp')+'/ct-audit-event.html',page('Audit event',render.event(s,st)));
+  writeFileSync((process.env.TMPDIR||'/tmp')+'/ct-audit-checkout.html',page('Audit checkout',render.checkout()));
+  writeFileSync((process.env.TMPDIR||'/tmp')+'/ct-audit-create.html',page('Audit create',render.create()));
+  writeFileSync((process.env.TMPDIR||'/tmp')+'/ct-audit-tickets.html',page('Audit tickets',render.list([item])));
+  writeFileSync((process.env.TMPDIR||'/tmp')+'/ct-audit-ticket-detail.html',page('Audit ticket detail',render.detail(item)));
 });

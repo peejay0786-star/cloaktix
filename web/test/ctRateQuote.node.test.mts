@@ -15,5 +15,5 @@ it('RateQuotePanel real render shows USD and NIGHT without ETH',()=>{
  const html=require(dir+'/render.cjs').panel(1000n,0.05);
  assert.match(html,/Live NIGHT quote/);assert.match(html,/200\.00 NIGHT/);assert.match(html,/\$10\.00 USD/);assert.doesNotMatch(html,/ETH/);
  const css=readFileSync(new URL('../src/styles.css',import.meta.url),'utf8');
- writeFileSync('/workspace/ct-rate-quote.html','<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CT-RATE quote</title><style>'+css+'</style></head><body><div class="app"><p class="small muted">LOCAL MOCK · CT-RATE quote countdown</p><main>'+html+'</main></div></body></html>');
+ writeFileSync((process.env.TMPDIR||'/tmp')+'/ct-rate-quote.html','<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CT-RATE quote</title><style>'+css+'</style></head><body><div class="app"><p class="small muted">LOCAL MOCK · CT-RATE quote countdown</p><main>'+html+'</main></div></body></html>');
 });

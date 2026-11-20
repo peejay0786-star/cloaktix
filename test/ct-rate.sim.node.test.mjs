@@ -9,7 +9,7 @@ import { tmpdir } from 'node:os';
 
 const require = createRequire(import.meta.url);
 const rt = await import(
-  pathToFileURL(require.resolve('@midnight-ntwrk/compact-runtime', { paths: ['/workspace/midnight-pass/cloaktix/web'] })).href,
+  pathToFileURL(require.resolve('@midnight-ntwrk/compact-runtime', { paths: [new URL('../web', import.meta.url).pathname] })).href,
 );
 const { Contract, ledger, pureCircuits, TicketStatus } = await import('../contract/managed/cloaktix-rate-v3/contract/index.js');
 const { newIssuerSecret, issuerPublicKey } = await import('../contract/age-credential.mjs');
