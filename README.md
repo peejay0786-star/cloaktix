@@ -83,6 +83,10 @@ Taken on the live Preview app during the first real door test of the Launch Nigh
 
 | | |
 |---|---|
+| ![My tickets](docs/screenshots/egg40/01-my-tickets.png) | ![Tickets and capacity](docs/screenshots/egg40/02-tickets-capacity.png) |
+| My tickets: two General admission tickets for Launch Night. | Organizer view: sold and admitted per ticket type, USD price with NIGHT conversion. |
+| ![Doors and door times](docs/screenshots/egg40/03-doors.png) | ![Door keys](docs/screenshots/egg40/04-door-keys.png) |
+| Doors and door times stored on-chain. | Door keys: settlement key, staff phone link and per-door entry count. |
 | ![Staff phone approved for Main door](docs/screenshots/egg40/05-staff-phone-approved.png) | ![Staff door scanner, no wallet](docs/screenshots/egg40/06-staff-scanner.png) |
 | Staff phone approved on-chain for Main door. No wallet on the phone. | Door scanner with relay status and key window. |
 | ![Camera scan](docs/screenshots/egg40/07-camera-scan.png) | ![Valid, admit 1](docs/screenshots/egg40/09-valid.png) |
