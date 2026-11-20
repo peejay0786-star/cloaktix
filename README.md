@@ -58,7 +58,7 @@ show its QR at Main door.
 ## Door check-in (EGG-40)
 
 1. **Organizer sets doors** (for example Main door) and the door times in Organize event › Door keys.
-2. **Staff phone, no wallet:** opens the door link, picks a door, and shows a pairing code. The phone keeps its own
+2. **Staff phone, no wallet:** opens the door link (copied, or scanned from the "Show QR" code in Door keys), picks a door, and shows a pairing code. The phone keeps its own
    non-extractable signing key.
 3. **Organizer approves** the phone after checking the fingerprint. This is one 1AM transaction (`authorizeDoorKey`)
    with a validity window of up to 48 h. The default runs from 1 h before doors until a day after they close. The

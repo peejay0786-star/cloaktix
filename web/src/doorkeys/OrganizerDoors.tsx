@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Dialog } from '../Dialog';
 import { DoorVerdict } from '../DoorVerdict';
 import { PendingButton } from '../PendingButton';
+import { Qr, qrPngDataUrl } from '../Qr';
 import { cameraScanSupported, Scanner } from '../Scanner';
 import { DoorKeyError, type OrganizerDoorApi, type PairingPreview, type WalletPhase } from './api';
 import { useEgg40Api, usePolled } from './hooks';
@@ -190,7 +191,8 @@ function DoorKeys({ api, eventId, schedule, run }: { api: OrganizerDoorApi; even
   const { active, expired } = splitKeys(rows, now);
   const greyed = rows.filter(r => r.revoked && recentlyRevoked.includes(r.keyId));
   const settlementKey = active.find(r => r.kind === 'settlement');
-  const staffLink = `${location.origin}/door?${new URLSearchParams({ event: String(eventId), contract: api.contract() })}`;
+  const [showStaffQr, setShowStaffQr] = useState(false);
+  const staffLink = staffDoorLink(location.origin, eventId, api.contract());
 
   return <section className="card door-keys" aria-labelledby="door-keys-heading">
     <div className="door-keys-head">
@@ -224,7 +226,9 @@ function DoorKeys({ api, eventId, schedule, run }: { api: OrganizerDoorApi; even
 
     {schedule && <div className="door-staff-link">
       <p><b>Staff phones</b> <span className="muted">open this link to set up a door scanner. No wallet needed.</span></p>
-      <div className="row wrap"><code>{staffLink}</code><CopyButton text={staffLink} label="Copy link" /></div>
+      <div className="row wrap"><code>{staffLink}</code><CopyButton text={staffLink} label="Copy link" />
+        <button type="button" aria-expanded={showStaffQr} onClick={() => setShowStaffQr(v => !v)}>{showStaffQr ? 'Hide QR' : 'Show QR'}</button></div>
+      {showStaffQr && <StaffLinkQr link={staffLink} eventId={eventId} />}
     </div>}
 
     {active.length + greyed.length === 0
@@ -450,4 +454,21 @@ function AddDoorKey({ api, eventId, schedule, run, onClose, onAdded }: { api: Or
       <button type="button" className="primary wide" onClick={onClose}>Done</button>
     </>}
   </div></Dialog>;
+}
+
+/** Public staff setup link: event id and contract address only. No door key, secret or token. */
+export function staffDoorLink(origin: string, eventId: bigint, contract: string): string {
+  return `${origin}/door?${new URLSearchParams({ event: String(eventId), contract })}`;
+}
+
+/** QR of the public staff link only. It never carries a door key or secret. */
+export function StaffLinkQr({ link, eventId }: { link: string; eventId: bigint }) {
+  return <figure className="staff-link-qr">
+    <Qr text={link} size={220} label="QR code of the staff phone link" />
+    <figcaption className="small muted">Scan with the staff phone camera</figcaption>
+    <button type="button" onClick={() => {
+      const url = qrPngDataUrl(link); if (!url) return;
+      const a = document.createElement('a'); a.href = url; a.download = `cloaktix-staff-link-event-${eventId}.png`; a.click();
+    }}>Download QR</button>
+  </figure>;
 }

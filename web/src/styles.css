@@ -1188,6 +1188,8 @@ main:has(.event-create-form), main:has(.organizer-event-page) {
 .door-staff-link { margin: 0 0 14px; }
 .door-staff-link p { margin: 0; }
 .door-staff-link code { flex: 1 1 260px; min-width: 0; padding: 8px 10px; }
+.staff-link-qr { margin: 10px 0 0; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.staff-link-qr svg { width: 220px; height: 220px; max-width: 100%; background: #FFFFFF; border-radius: 4px; }
 .door-key-table td { vertical-align: middle; }
 .door-key-table tr.is-revoked td { color: var(--mut); text-decoration: line-through; text-decoration-color: rgba(255,255,255,.25); }
 .door-key-table tr.is-revoked td.door-key-action { text-decoration: none; }
