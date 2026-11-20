@@ -9,16 +9,43 @@ CloakTix sells event tickets as tokens on Midnight. Buyers pay in **NIGHT only**
 
 Thanks to the Midnight developer community and the [midnightntwrk](https://github.com/midnightntwrk) open-source work this project builds on, including Compact contracts, Midnight.js, ZKIR v3, and the Midnight Verifiable Credentials core (`midnightntwrk/midnight-verifiable-credentials`).
 
-## Live Preview contract
+## Live Preview contracts
 
 - Network: Midnight **Preview**, ledger 9
-- Contract (public): `b92733389b1955c913dec004df708a12697df4a962ffab5dbde1e88f574ab04e`
-- Schema: rate-v3 (schema 3)
+- **EGG-40 contract (current, public):** `7f6481e3bec6b778db7b5959837ab82a5ffe47468f56aab4bfc4bdc56830d372`.
+  Source: `contract/cloaktix-egg40.compact`. Adds door keys and batch door settlement to the rate-v3 design.
+  Signed USD quotes up to 300 s old.
+- Earlier rate-v3 contract (schema 3, still readable): `b92733389b1955c913dec004df708a12697df4a962ffab5dbde1e88f574ab04e`
 - Platform fee: 3% (`feeBps` = 300), sealed at deploy
 - App (public): https://app.cloaktix.com
+- Door relay (public, no secrets): `door-relay/`, a Cloudflare Worker
 - Landing: https://cloaktix.com
 
-The contract was deployed by the project owner with 1AM on 2026-11-09. This repository does not sign transactions. The owner signs in 1AM.
+The project owner deploys the contracts with 1AM. This repository does not sign transactions. The owner signs in 1AM.
+
+## Launch Night demo
+
+EGG-40 event 1 is **CloakTix Launch Night**: General admission (18+) and After party ticket types. Doors open
+Dec 12, 2026, 19:00 to 23:00 (Toronto time). You can buy a ticket in the app with 1AM on Preview, open it in
+My tickets, and show its QR at the door.
+
+## Door check-in (EGG-40)
+
+1. **Organizer sets doors** (for example Main door) and the door times in Organize event › Door keys.
+2. **Staff phone, no wallet:** opens the door link, picks a door, and shows a pairing code. The phone keeps its
+   own non-extractable signing key.
+3. **Organizer approves** the phone after checking the fingerprint. This is one 1AM transaction
+   (`authorizeDoorKey`) with a validity window of up to 48 h (the default is 1 h before doors until a day after).
+   The app shows the steps: Building proof, then Approve in your wallet.
+4. **Scan:** the phone reads the ticket on-chain (via the indexer) and asks the relay to record the first entry.
+   The entry is signed by the door key. The ticket secret is encrypted to the organizer.
+   Verdicts are Valid, Already used, Wrong door, Not for this event, Door not open yet (key window not started,
+   nothing recorded), or Can't confirm entry (relay or indexer offline: fails closed).
+5. **Settlement:** after the event, the organizer's settlement key (gate 99) records entries on-chain in
+   batches of 4 (`admitByDoor4`). Plan B: the organizer can admit a guest directly with 1AM (`admit`).
+
+The relay checks every write against the EGG-40 contract state read from the public indexer.
+Organizer routes need an organizer signature bound on-chain.
 
 ## Features
 
@@ -59,10 +86,11 @@ Captured from the public Preview app on 10 November 2026:
 | Token base | OpenZeppelin Compact Contracts `MultiToken` and `Pausable` (commit `9b6b21a`). Account id = hash of the holder secret |
 | Witnesses | `contract/witnesses-rate-v3.ts`: holder secret and optional age credential, from local private state |
 | Web app | `web/`: React and Vite, Midnight.js 5.0.0, compact-runtime 0.21.0, DApp Connector v4 (1AM), on-chain runtime v4, ZKIR v3 |
-| Preview Worker | `preview-worker/`: serves the app, public catalog, same-origin ZK assets, and the demo Passport stub issuer |
+| Preview Worker | `preview-worker/`: serves the app, public catalog, same-origin ZK assets and indexer proxy, and the demo Passport stub issuer |
+| Door relay | `door-relay/` (code shared with `web/src/egg40/eventDoor.ts`): door keys, first-entry records, settlement queue; one Durable Object per event |
 | Test issuer (local) | `web/passport-stub/server.mjs` can also issue credentials on a local port |
 
-Schema 4 (multi-door, delegated staff, scanner sync) is present in source (`contract/cloaktix-rate-v4.compact` and the v4 session) but is **fail-closed**. It is not deployed and cannot enroll staff, manage doors, or admit on Preview.
+Doors and staff phones are live through the EGG-40 contract and the door relay (see Door check-in). The older schema 4 draft (`contract/cloaktix-rate-v4.compact`) is not deployed and stays fail-closed.
 
 `buyTicketAda` / `buyTicketAdaAdult` exist on the v3 contract for an earlier multi-currency design. The product does not offer ADA.
 
@@ -101,6 +129,13 @@ npm install
 compact compile contract/cloaktix-rate-v3.compact contract/managed/cloaktix-rate-v3
 ```
 
+Node unit tests for the web app (EGG-40 door flow included; a few tests skip because the live-state snapshots are not published):
+
+```bash
+cd web
+node --experimental-strip-types --test test/egg4*.node.test.mts
+```
+
 Simulator tests (no network):
 
 ```bash
@@ -125,8 +160,9 @@ Local e2e against an undeployed devnet needs official Midnight genesis seeds. Th
 ## Known limits
 
 - **Demo age issuer.** The Passport stub signs whatever birthdate is typed. It is not Midnight Passport and is not real age verification.
-- **Multi-door is fail-closed.** Schema 4 is not live. Check-in on Preview is the schema 3 path.
-- **Resale and check-in are not end-to-end verified** on the current ledger 9 contract with 1AM. Create event, a first ticket purchase, and multi-buy (single intent) were confirmed live on 2026-11-09. Door and resale flows were built and unit-tested, but not proven end-to-end on this contract.
+- **Door check-in** on the EGG-40 contract was tested live on Preview: staff phone approval, Valid, then Already used. On-chain batch settlement after a real event has not been run yet.
+- **Resale is not end-to-end verified** on the ledger 9 contracts with 1AM. It is built and unit-tested.
+- **Test scans count.** An entry recorded by a test door key before the event still marks that ticket used. Test with a spare ticket.
 - **Payments are pseudonymous, not shielded.** Tickets are paid in unshielded NIGHT, which links the paying wallet address to the holder id. `checkIn` / admit reveal which holder id holds a ticket type.
 - **Not audited.** This is a prototype.
 - **Tickets do not appear in 1AM's NFTs tab.** They are MultiToken balances inside the contract. View them in CloakTix.
@@ -141,7 +177,8 @@ Local e2e against an undeployed devnet needs official Midnight genesis seeds. Th
 ## Repository layout
 
 ```
-contract/           Compact sources and compiled JS / ZKIR (no proving keys)
+contract/           Compact sources (incl. cloaktix-egg40.compact) and compiled JS / ZKIR (no proving keys)
+door-relay/         Cloudflare Worker for door entries (EGG-40)
 web/                React app, tests, static assets
 preview-worker/     Cloudflare Worker for app.cloaktix.com
 coming-soon/        Public cloaktix.com landing

@@ -1,0 +1,28 @@
+# EGG-40 door relay, go-live config (the project owner deploys it).
+# EGG-41: every write is checked against the EGG-40 contract state read from the Preview indexer (fails closed).
+# Command: npx wrangler deploy -c wrangler.golive.toml --keep-vars
+name = "cloaktix-door-relay"
+main = "src/index.ts"
+compatibility_date = "2024-11-01"
+workers_dev = true
+preview_urls = false
+
+# Public values only (no secrets): the contract address, the public indexer and the app origin.
+[vars]
+EGG40_CONTRACT = "7f6481e3bec6b778db7b5959837ab82a5ffe47468f56aab4bfc4bdc56830d372"
+INDEXER_URL = "https://indexer.preview.midnight.network/api/v3/graphql"
+ALLOWED_ORIGIN = "https://app.cloaktix.com"
+
+# Same runtime the app Worker bundles (ledger 9 wasm, precompiled for Workers).
+[alias]
+"@midnightntwrk/onchain-runtime-v4" = "../preview-worker/onchain-runtime-shim.js"
+"@midnight-ntwrk/onchain-runtime-v4" = "../preview-worker/onchain-runtime-shim.js"
+"@midnight-ntwrk/compact-runtime" = "../preview-worker/node_modules/@midnight-ntwrk/compact-runtime/dist/index.js"
+
+[[durable_objects.bindings]]
+name = "EVENT_DOOR"
+class_name = "EventDoorObject"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["EventDoorObject"]

@@ -4,3 +4,14 @@ Copyright 2026 P-Jay G.
 This product includes software from OpenZeppelin Compact Contracts
 (https://github.com/OpenZeppelin/compact-contracts, commit 9b6b21a), MIT License,
 Copyright (c) 2025 Zeppelin Group Ltd.
+
+This product includes barcode-detector 3.2.3
+(https://github.com/Sec-ant/barcode-detector), MIT License,
+Copyright (c) 2023 Ze-Zheng Wu.
+
+This product includes zxing-wasm
+(https://github.com/Sec-ant/zxing-wasm), MIT License,
+Copyright (c) 2023 Ze-Zheng Wu.
+
+zxing-wasm redistributes ZXing-C++
+(https://github.com/zxing-cpp/zxing-cpp), Apache License 2.0.

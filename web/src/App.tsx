@@ -36,6 +36,8 @@ import { loadSdk, sdkOrThrow } from './midnight/load';
 import { proofLog } from './midnight/proofLog';
 import { Qr } from './Qr';
 import { cameraScanSupported, Scanner } from './Scanner';
+import { DoorVerdict } from './DoorVerdict';
+import { doorVerdictCopy } from './mapDoorVerdict';
 import { encodePassQr } from './passCodec';
 import {
   lastContract,
@@ -46,14 +48,21 @@ import {
 } from './passStore';
 import { parseAdmitFromLocation } from './v2/admitCodec';
 const AdmitPhoneView=lazy(()=>import('./v2/AdmitPhoneView').then(m=>({default:m.AdmitPhoneView})));
+// EGG-40 walletless staff door scanner: /door?event=<id>&contract=<hex>, no wallet session.
+const StaffDoorApp=lazy(()=>import('./doorkeys/StaffDoor').then(m=>({default:m.StaffDoorApp})));
+const ROUTE_DOOR = /^\/door\/?$/.test(location.pathname);
 import { schemaUsesSerialTickets } from './v2/serialTicketSchema';
 import { saveAdmitDetails } from './v2/prepareAdmit';
 import { GateV2, TicketsV2, buyTicketV2Flow, schemaIsV2 } from './v2/TicketsGateV2';
 import { resolveSchema } from './midnight/schema';
 import { planV3DeploySteps, loadV3DeployProgress } from './midnight/deployV3Plan';
 import { configuredRateV3Contract } from './midnight/contract-v3';
+import { configuredEgg40Contract, isEgg40Contract } from './midnight/contract-egg40-meta';
+import { planEgg40DeploySteps, loadEgg40DeployProgress } from './midnight/deployEgg40Plan';
 import { buildEventShareUrl } from './v2/shareLinks';
 import { addTicketTypeArgs, listForResaleArgs } from './midnight/circuitArgs';
+import { EventDoorsPanel, SettleEntriesPanel } from './doorkeys/OrganizerDoors';
+import { useResaleLocked } from './doorkeys/hooks';
 import { v3PurchaseProps } from './v3/purchaseProps';
 
 const NETWORK = new URLSearchParams(location.search).get('network') ?? (import.meta.env.VITE_NETWORK as string) ?? 'undeployed';
@@ -62,7 +71,7 @@ const URL_CONTRACT = SEARCH.get('contract');
 const preferTicketsStart = SEARCH.get('start') === 'tickets' || location.hash.slice(1) === 'tickets';
 function resolveContractHint(): string | null {
   const schema = resolveSchema();
-  return URL_CONTRACT || lastContract(NETWORK, schema) || (schema === 3 ? configuredRateV3Contract(NETWORK) : null);
+  return URL_CONTRACT || configuredEgg40Contract() || lastContract(NETWORK, schema) || (schema === 3 ? configuredRateV3Contract(NETWORK) : null);
 }
 // Public metadata may be read from the configured v3 contract without changing wallet schema defaults.
 function resolveCatalogContractHint(): string | null { return resolveContractHint() || configuredRateV3Contract(NETWORK); }
@@ -119,6 +128,7 @@ export function App() {
     window.addEventListener('hashchange',update);window.addEventListener('popstate',update);
     return ()=>{window.removeEventListener('hashchange',update);window.removeEventListener('popstate',update);};
   },[]);
+  if (ROUTE_DOOR) return <Suspense fallback={<div className="card empty" role="status">Opening door scanner…</div>}><StaffDoorApp /></Suspense>;
   return admitCap ? <Suspense fallback={<div className="card empty" role="status">Opening your ticket…</div>}><AdmitPhoneView initial={admitCap} /></Suspense> : <BuyerApp />;
 }
 
@@ -388,6 +398,7 @@ function BuyerApp() {
         <h1>Organizer <span className="amber">space</span></h1>
         <p>Connect the wallet you organize with. Your organizer identity comes from it, and you only see the events you created. On-chain, only you can add ticket types or open and close sales for them.</p>
         <button className="primary big" onClick={openWalletPicker}>Connect wallet</button>
+        <p className="muted small hero-staff-link">Door staff? Open the staff link the organizer sent you. No wallet needed.</p>
       </section>}
       {evRoute === null && !org && tab === 'home' && <HomeScreen connected={!!s} onBrowseEvents={() => setTab('events')} onTickets={() => setTab('tickets')} savedCount={savedPasses.length} />}
       {!s && evRoute === null && !org && tab === 'events' && <DisconnectedEvents onConnect={openWalletPicker} onOpenEvent={openEventPage} />}
@@ -432,7 +443,7 @@ function BuyerApp() {
 
       {s && tab !== 'home' && <main id="main" className={tab === 'events' && evRoute === null ? 'buyer-catalog-main' : undefined}>
         {busy && <div className="busy" role="status"><span className="spin" />{busy}. Approve in your wallet when prompted. A proof may run in the browser first; then we wait for confirmation on the network.{/18\+/.test(busy) && ' The 18+ age proof is a larger circuit: allow about 1–2 minutes.'}</div>}
-        {err && <div className="error" onClick={() => setErr(null)} role="alert">{err.slice(0, 300)}</div>}
+        {err && <div className="error" onClick={() => setErr(null)} role="alert">{err.slice(0, 1200)}</div>}
         {evRoute !== null && <EventPage s={s} st={st} run={run} bump={bump} id={evRoute} openTickets={() => setTab('tickets')} />}
         {evRoute === null && tab === 'events' && <Events s={s} st={st} run={run} bump={bump} openEvent={openEventPage} />}
         {evRoute === null && tab === 'organizer' && (staffOnly ? <GateV2 s={s} st={st} evName={evName} ttName={ttName} /> : managedEvent !== null ? <OrganizerEvent key={String(managedEvent)} s={s} st={st} run={run} eventId={managedEvent} onBack={() => setTab('organizer')} onOrganize={openOrganizerEvent} /> : <Organizer s={s} st={st} run={run} setBusy={setBusy} onOrganize={openOrganizerEvent} />)}
@@ -520,6 +531,8 @@ export function Events({ s, st, run, bump, openEvent }: P & { bump: (t: bigint, 
   const [resaleResult, setResaleResult] = useState<ResaleOutcome | null>(null);
   const resaleLock = useRef(false);
   const [resaleBusy, setResaleBusy] = useState(false);
+  const listingEvent = (typeId: bigint) => st?.types.find((t) => t.id === typeId)?.eventId ?? 0n;
+  const resaleLocked = useResaleLocked((st?.listings ?? []).map((l) => listingEvent(l.typeId)));
   const buyResale = async (listing: NonNullable<St>['listings'][number]) => {
     if (resaleLock.current || resaleResult?.kind === 'needs-prepare') return;
     resaleLock.current = true; setResaleBusy(true);
@@ -550,6 +563,8 @@ export function Events({ s, st, run, bump, openEvent }: P & { bump: (t: bigint, 
   const adultTypes = st.types.some((t) => t.adultOnly);
   // CT-POLISH-3: key registrations and events with no ticket types are not shown to buyers.
   const visible = buyerVisibleEvents(st.events, st.types, KEY_EVENTS);
+  // EGG-40: resale closes for an event once its doors open (entries are settled on-chain after close).
+  const openListings = st.listings.filter((l) => !resaleLocked(listingEvent(l.typeId)));
   return <section className="events-catalog">
     <EventsHeader />
     {purchaseNotice&&<div className="card done"><PurchaseNextSteps/></div>}
@@ -560,9 +575,9 @@ export function Events({ s, st, run, bump, openEvent }: P & { bump: (t: bigint, 
       <a className="orglink" href={orgHref()}>Open organizer space →</a>
     </div>}
     <div className="grid catalog-grid">{visible.map((e) => <EventCard key={String(e.id)} s={s} st={st} run={run} bump={bump} e={e} openEvent={openEvent} onBought={()=>setPurchaseNotice(true)} />)}</div>
-    {st.listings.length > 0 ? <>
+    {openListings.length > 0 ? <>
       <h2>Resale <span className="muted small">policy set by the organizer</span></h2>
-      <div className="grid catalog-resale-grid">{st.listings.map((l) => <div className="card listing" key={String(l.id)}>
+      <div className="grid catalog-resale-grid">{openListings.map((l) => <div className="card listing" key={String(l.id)}>
         <div><b>{ttName(s, l.typeId)}</b><p className="muted">Listing #{String(l.id)}{(l as any).serial != null ? ` · serial ${String((l as any).serial)}` : ''} · {evName(s, st.types.find((t) => t.id === l.typeId)?.eventId ?? 0n)}</p></div>
         {l.mine ? <WalletPendingButton run={run} label={`Cancel listing #${l.id}`} action={async () => { const r = await s.call('buyResale', [l.id]); if (r) bump(l.typeId, 1); }}>Withdraw</WalletPendingButton>
           : <PurchaseButton amount={l.price} disabled={resaleBusy || resaleResult?.kind === 'needs-prepare'}
@@ -574,6 +589,7 @@ export function Events({ s, st, run, bump, openEvent }: P & { bump: (t: bigint, 
           }} />}
       </div>)}</div>
     </> : (visible.length > 0 ? <p className="muted small resale-quiet">No resale listings right now.</p> : null)}
+    {openListings.length < st.listings.length && <p className="muted small resale-quiet">Resale is closed for events whose doors are open.</p>}
     {resaleResult && <div className="card">{resaleResult.kind === 'ready'
       ? <TransferTicket cap={resaleResult.cap} />
       : <><h3>Ticket #{String(resaleResult.receipt.serial)} purchased</h3><p>Preparation did not finish. Your purchase is kept. Do not buy again.</p><p className="small muted">{resaleResult.error}</p><PendingButton disabled={resaleBusy} pending={resaleBusy} pendingLabel={PENDING_WALLET} onClick={retryResalePrepare}>Prepare my ticket</PendingButton></>}</div>}
@@ -646,9 +662,17 @@ export function EventCard({ s, st, run, bump, e, onBought, openEvent }: P & { bu
         legacyNightPurchase={async () => {
         try {
           if (v3) {
-            const r = await run(`Buy ${names.ticketName} (NIGHT)`, () => (s as any).buyNightV3({
-              typeId: t.id, adult: !!t.adultOnly, asOf: t.adultOnly ? sdkOrThrow().nowAsOf() : undefined, ...names,
-              priceUsdCents: v3.usdCents, feeBps: BigInt((st as any)?.feeBps ?? 300n) }));
+            // EGG-44: a failure is rethrown so Checkout shows it in the dialog (the page banner sits behind it).
+            let failure: unknown = null; let ran = false;
+            const r = await run(`Buy ${names.ticketName} (NIGHT)`, async () => {
+              ran = true;
+              try {
+                return await (s as any).buyNightV3({
+                  typeId: t.id, adult: !!t.adultOnly, asOf: t.adultOnly ? sdkOrThrow().nowAsOf() : undefined, ...names,
+                  priceUsdCents: v3.usdCents, feeBps: BigInt((st as any)?.feeBps ?? 300n) });
+              } catch (err) { failure = err; throw err; }
+            });
+            if (!r) throw failure ?? new Error(ran ? 'The purchase did not finish. Check My tickets before trying again.' : 'Another wallet action is already in progress. Wait for it to finish, then try again.');
             afterV3(r);
             return;
           }
@@ -660,9 +684,9 @@ export function EventCard({ s, st, run, bump, e, onBought, openEvent }: P & { bu
           const r = await run(`Buy ${ttName(s, t.id)}`, () => (t.adultOnly ? s.call('buyTicketAdult', [t.id, sdkOrThrow().nowAsOf()]) : s.call('buyTicket', [t.id])));
           if (r) { bump(t.id, 1); onBought?.(r); }
         } catch (err: any) {
-          // buyTicketV2Flow should never throw outside run; belt-and-suspenders so Buy is never a silent no-op.
+          // Never a silent no-op: Checkout shows the reason inside the dialog.
           console.error('Buy click failed', err);
-          alert(String(err?.message ?? err));
+          throw err;
         }
       }} />; })()}
     </div>; })}
@@ -758,6 +782,28 @@ function AgeCheck({ s, run }: { s: Session; run: P['run'] }) {
   </div>;
 }
 
+export function Egg40DeployCard({ s, run, setBusy }: { s: any; run: any; setBusy?: (m: string) => void }) {
+  const [addr, setAddr] = useState<string | null>(null);
+  const plan = planEgg40DeploySteps();
+  const p = loadEgg40DeployProgress(NETWORK);
+  const configured = configuredEgg40Contract();
+  return <div className="card"><h3>Deploy the EGG-40 contract (door keys · staff phones)</h3>
+    {configured
+      ? <p className="note">This app already uses EGG-40 contract <code>{configured.slice(0, 12)}…</code>. Do not deploy another one.</p>
+      : <>
+        <p className="muted">Deploys a <b>new</b> EGG-40 contract on Midnight Preview with <b>your</b> 1AM wallet: same fee, admin, age issuer and rate signer as schema v3, quotes up to 300 s, no ADA. It does <b>not</b> touch the current contract or Test v3. The app keeps using the current contract until the new address is wired in.</p>
+        <p className="note"><b>{plan.totalSteps} wallet confirmations</b>: 1 create, then {plan.insertBatches.length} verifier-key installs. Keep this tab open and use the same browser until the end. If it stops, click the button again: it resumes from the chain.</p>
+        {p && p.status !== 'done' && p.address ? <p className="muted small">Resume available: step {p.step}/{p.totalSteps} ({p.message || p.status}).</p> : null}
+        <WalletPendingButton className="primary" run={run} label="Deploy EGG-40 (batched)" action={async () => {
+          const r = await s.deployEgg40(s.address, (e: { label: string; detail?: string }) => setBusy?.(`${e.label}${e.detail ? ': ' + e.detail : ''}`));
+          setAddr(r.address);
+          return r;
+        }}>{`Deploy EGG-40 (${plan.totalSteps} steps)`}</WalletPendingButton>
+        {(addr || (p?.status === 'done' && p.address)) ? <p className="note">EGG-40 contract: <code style={{ wordBreak: 'break-all' }}>{addr || p!.address}</code>. Copy this full address and send it.</p> : null}
+      </>}
+  </div>;
+}
+
 export function Organizer({ s, st, run, setBusy, onOrganize }: P & { onOrganize?: (id: bigint) => void }) {
   const [paste, setPaste] = useState('');
   const [ev, setEv] = useState<EventDetails>({name:'',date:'',venue:'',cover:'',description:'',demoArt:'false'});
@@ -782,7 +828,7 @@ export function Organizer({ s, st, run, setBusy, onOrganize }: P & { onOrganize?
     {s.schema !== 4 && (!s.contract || s.schema === 3) && <div className="card"><h3>1 · Deploy the CloakTix platform{s.schema === 3 ? ' (schema v3 · USD quotes / NIGHT)' : s.schema === 2 ? ' (schema v2)' : ''}</h3>
       {s.schema === 3
         ? <>
-            <p className="muted">Deploy a <b>new</b> schema v3 contract (USD quotes, paid in NIGHT) on Midnight Preview with <b>your</b> 1AM wallet. The live Preview rate signer public key is baked in. Does <b>not</b> touch live v2 <code>7fd12c11…</code>. Keep <code>?schema=2</code> for existing tickets.</p>
+            <p className="muted">Deploy a <b>new</b> schema v3 contract (USD quotes, paid in NIGHT) on Midnight Preview with <b>your</b> 1AM wallet. The live rateSigner public key is baked in. Does <b>not</b> touch live v2 <code>7fd12c11…</code>. Keep <code>?schema=2</code> for existing tickets.</p>
             <p className="note">Block-limit safe: <b>{planV3DeploySteps().totalSteps} wallet confirmations</b> (1 create + verifier-key inserts). After each approval the app waits for on-chain inclusion before the next 1AM prompt (avoids “pending transaction”). If interrupted, click Deploy again. Resume skips steps already on-chain.</p>
             {s.contract ? <p className="note">This deploys a <b>new</b> contract. Existing events stay on the current address until the new one is wired in. Do not create a replacement event until then.</p> : null}
             {(() => { const p = loadV3DeployProgress(NETWORK); return p && p.status !== 'done' && p.address ? <p className="muted small">Resume available: step {p.step}/{p.totalSteps} ({p.message || p.status}).</p> : null; })()}
@@ -809,6 +855,7 @@ export function Organizer({ s, st, run, setBusy, onOrganize }: P & { onOrganize?
       <p className="muted small" style={{marginTop:12}}>or paste a contract address for <b>this</b> schema only (v1 and v2 addresses stay separate)</p>
       <div className="row"><input placeholder="contract address" value={paste} onChange={(e) => setPaste(e.target.value)} /><button onClick={() => { s.setContract(paste.trim()); location.reload(); }}>Use</button></div>
     </div>}
+    {s.schema === 3 && new URLSearchParams(location.search).get('deploy') === 'egg40' && <Egg40DeployCard s={s} run={run} setBusy={setBusy} />}
     {s.contract && s.schema !== 4 && <>
       <div className="card"><h3>Create an event</h3>
         <p className="muted">Complete public details are required. They are signed by you and checked against the on-chain organizer before appearing in the public catalog. Live availability is confirmed after connection.</p>
@@ -893,6 +940,7 @@ export function OrganizeEventButton({ s, eventId, onOrganize }: { s: Session; ev
 
 /** Organizer management is event-scoped, never the public buyer /e/:id page. */
 export function OrganizerEvent({ s, st, run, eventId, onBack, onOrganize }: P & { eventId: bigint; onBack(): void; onOrganize?: (id: bigint) => void }) {
+  const [settling, setSettling] = useState(false);
   if (st?.schemaVersion === 4 && st.staffOnly) return <GateV2 s={s} st={st} evName={evName} ttName={ttName} />;
   if (!st) return <><button onClick={onBack}>← Back to My events</button><p role="status">Loading organizer event…</p></>;
   const event = ownedOrganizerEvent(st, eventId);
@@ -903,6 +951,7 @@ export function OrganizerEvent({ s, st, run, eventId, onBack, onOrganize }: P & 
   const info = meta.get(`${s.contract}:ev:${eventId}`);
   const stats = organizerEventStats(st, eventId);
   const used = (id: bigint) => st.schemaVersion === 1 ? [...st.checkIns.values()].filter(type => type === id).length : st.tickets.filter(ticket => ticket.typeId === id && ticket.status === 2).length;
+  if (settling) return <section className="organizer-event-page"><SettleEntriesPanel eventId={eventId} run={run} onBack={() => setSettling(false)} /></section>;
   return <section className="organizer-event-page">
     <button className="nav-back" onClick={onBack}>← Back to My events</button>
     <p className="kicker">Organize event</p>
@@ -915,6 +964,7 @@ export function OrganizerEvent({ s, st, run, eventId, onBack, onOrganize }: P & 
       <CopyShare s={s} st={st} id={eventId} />
     </div>
     {s.schema === 4 && <p className="note">Schema 4 is a local implementation, not live. All on-chain submissions and deployment remain disabled.</p>}
+    <EventDoorsPanel eventId={eventId} eventName={evName(s, eventId)} ticketNames={st.types.filter(t => t.eventId === eventId).map(t => ttName(s, t.id))} run={run} onSettle={() => setSettling(true)} />
     <section className="card organizer-payout" aria-labelledby="organizer-payout-heading">
       <h2 id="organizer-payout-heading">NIGHT payout</h2>
       {savedPayout ? <><code className="organizer-payout-address">{savedPayout}</code><p className="note" role="note">This address was set at creation. NIGHT payments for this event go here. It cannot be changed.</p></>
@@ -928,7 +978,7 @@ export function OrganizerEvent({ s, st, run, eventId, onBack, onOrganize }: P & 
     </section>
     {collapseDuplicateTypes(stats.types, (id) => ttName(s, id)).some((g) => g.members.length > 1) && <p className="note" role="note">Some ticket types have the same name, price and rules. Buyers see them as one option, and sales fill the lowest-numbered type first. Existing tickets keep their type.</p>}
     <OrganizerTicketType key={String(eventId)} s={s} st={st} run={run} eventId={eventId} />
-    {st.schemaVersion === 4 ? <div className="card"><DoorsStaff s={s} st={st} eventId={eventId} run={run} ttName={id => ttName(s, id)} /></div> : <p className="note">Doors &amp; staff requires a separate schema-4 contract. Current schema-{s.schema} events retain organizer-only Check-in.</p>}
+    {st.schemaVersion === 4 ? <div className="card"><DoorsStaff s={s} st={st} eventId={eventId} run={run} ttName={id => ttName(s, id)} /></div> : isEgg40Contract(s.contract) ? null : <p className="note">Doors &amp; staff requires a separate schema-4 contract. Current schema-{s.schema} events retain organizer-only Check-in.</p>}
   </section>;
 }
 
@@ -1011,6 +1061,7 @@ function Tickets({ s, st, run, owned, bump, passes, addPass, onBrowseEvents }: P
   const rates=useRates();
   const [resale, setResale] = useState<Record<string, string>>({});
   const [ask, setAsk] = useState<bigint | null>(null); // confirm sheet before burning a ticket
+  const resaleLocked = useResaleLocked(st?.types.map((t) => t.eventId) ?? []);
   const [show, setShow] = useState<Pass | 'pending' | null>(null); // full-screen QR
   if (!s.contract || !st) return <NoContract s={s} />;
   const mine = Object.entries(owned).filter(([, n]) => n > 0);
@@ -1044,7 +1095,7 @@ function Tickets({ s, st, run, owned, bump, passes, addPass, onBrowseEvents }: P
         <div className="perf" />
         <button className="primary big wide" onClick={() => setAsk(tid)}>Show entry QR</button>
         <p className="muted small center">Use it at the door. The QR works once.</p>
-        {mode === NO_RESALE ? <p className="muted small center">Resale not allowed for this ticket.</p> : <details className="resell"><summary>Resell this ticket</summary>
+        {resaleLocked(t.eventId) ? <p className="muted small center">Doors are open. Resale is closed for this event.</p> : mode === NO_RESALE ? <p className="muted small center">Resale not allowed for this ticket.</p> : <details className="resell"><summary>Resell this ticket</summary>
           <div className="row"><input aria-label="Resale price in USD" placeholder="USD" value={p} onChange={(e) => setResale({ ...resale, [id]: e.target.value })} /><button disabled={over} onClick={async () => {
             const r = await run(`List for resale ${ttName(s, tid)}`, () => {const quote=quoteUsd(p,rates);if(quote.kind!=='ready')throw new Error(quote.message);const priceUnits=s.schema===3?quote.cents:quote.atoms;return s.call('listForResale', listForResaleArgs(s.schema,{serialOrTypeId:tid,priceUnits,feeAtoms:s.schema===3?0n:sdkOrThrow().feeOf(quote.atoms),payout:s.userAddress()}));}); if (r) bump(tid, -1);
           }}>List</button></div>
@@ -1108,10 +1159,8 @@ function Gate({ s, st }: { s: Session; st: St }) {
         <PendingButton className="primary" pending={b} pendingLabel={PENDING_WALLET} disabled={b || !code} onClick={() => verify()}>Verify</PendingButton>
         <button onClick={() => { if (cameraScanSupported()) { setCam(true); setCamMsg(null); } else setCamMsg('Camera scanning is not available in this browser. Paste the code instead.'); }}>Scan with camera</button></div>
       {camMsg && <p className="warn small">{camMsg}</p>}
-      {cam && <Scanner onClose={() => setCam(false)} onCode={(c) => { setCam(false); setCode(c); verify(c); }} />}
-      {r && <div className={r.ok ? 'verdict ok' : 'verdict ko'}>{r.ok
-        ? <>✓ Admitted: {ttName(s, r.typeId)}<small>block {r.block} · pass {short(sdkOrThrow().decodePass(code)?.passId ?? '')} now consumed</small></>
-        : <>✕ Refused<small>{r.reason}</small></>}</div>}
+      {cam && <Scanner title={(() => { const ev = accept.startsWith('e:') ? st.events.find((e) => `e:${e.id}` === accept) : types.find((t) => `t:${t.id}` === accept); return ev ? evName(s, 'eventId' in ev ? ev.eventId : ev.id) : 'Check-in'; })()} admittedCount={admitted} onClose={() => setCam(false)} onPaste={() => { setCam(false); setCamMsg('Paste the ticket code in the field above.'); }} onCode={(c) => { setCam(false); setCode(c); verify(c); }} />}
+      {r && (() => { const v = doorVerdictCopy({ ok: r.ok, reason: r.ok ? undefined : r.reason, typeName: r.ok ? ttName(s, r.typeId) : undefined, meta: r.ok ? `block ${r.block} · pass ${short(sdkOrThrow().decodePass(code)?.passId ?? '')}` : '' }); return <DoorVerdict {...v} onNext={() => setR(null)} />; })()}
       <p className="muted small">Passes admitted at this gate: {admitted}</p>
     </div>
   </>;
@@ -1139,7 +1188,7 @@ function InstallHelp() {
       <p className="muted small"><b>Android:</b> Chrome menu → Install app / Add to Home screen.</p>
       <button type="button" disabled={checking} onClick={async()=>{setChecking(true);try{const result=await checkInstallAssets();setInstallStatus(result.message);}finally{setChecking(false);}}}>{checking?'Checking install files…':'Check install files'}</button>
       {installStatus&&<p className="small muted" role="status">{installStatus}</p>}
-      <p className="small muted">Install this app from the same signed-in browser. iPhone camera QR scanning may be unavailable; paste the private ticket code when needed.</p>
+      <p className="small muted">Install this app from the same signed-in browser. If the camera is unavailable at the door, paste the private ticket code.</p>
       <p className="muted small">Buying, listing, and check-in still need a connected Midnight wallet and network access. A saved pass QR is stored on this device only and does not by itself prove current on-chain status.</p>
     </details>
   );

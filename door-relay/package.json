@@ -1,0 +1,9 @@
+{
+  "name": "cloaktix-door-relay",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --port 8790 --ip 127.0.0.1",
+    "test": "node --experimental-strip-types --test ../web/test/egg40Relay.node.test.mts ../web/test/egg41RelayAuth.node.test.mts"
+  }
+}

@@ -16,6 +16,8 @@ import { detectOnChainSchema } from './detectSchema';
 import * as v2 from './session-v2';
 import { PRIVATE_STATE_ID_V2, createPrivateStateV2 } from './contract-v2';
 import { PRIVATE_STATE_ID_V3, createPrivateStateV3, configuredRateV3Contract } from './contract-v3';
+import { configuredEgg40Contract, isEgg40Contract } from './contract-egg40-meta';
+import { bindEgg40OrgSigner, bindEgg40SessionCall } from '../egg40/sessionHost';
 import * as v3 from './session-v3';
 import { buyNightV3Multi } from './multiBuyV3';
 import { loadV3DeployProgress } from './deployV3Plan';
@@ -69,10 +71,13 @@ export class Session {
     // Never silently promote a legacy unscoped key into schema 2 or 3.
     // Ledger 9 (Preview reset 2026-11-07): the legacy unscoped ledger-8 address is never promoted; it is dead on the new chain.
     // Schema 3 uses the configured v3 deployment when no URL/local contract is selected.
-    if (!this.contract && this.schema === 3) {
+    const egg40 = configuredEgg40Contract();
+    if (!q && egg40) this.contract = egg40;
+    else if (!this.contract && this.schema === 3) {
       const gated = configuredRateV3Contract(networkId);
       if (gated) { this.contract = gated; localStorage.setItem(ck, gated); }
     }
+    this.bindEgg40();
   }
   static async connect(w: Wallet, networkId: string) {
     const label = (x: string) => x === 'undeployed' ? 'Local devnet' : x.charAt(0).toUpperCase() + x.slice(1);
@@ -124,7 +129,12 @@ export class Session {
     if (s.schema === 4) {
       await providers.privateStateProvider.seed(PRIVATE_STATE_ID_V4, createPrivateStateV3(s.sk, s.age ?? undefined));
     } else if (s.schema === 3) {
-      await providers.privateStateProvider.seed(PRIVATE_STATE_ID_V3, createPrivateStateV3(s.sk, s.age ?? undefined));
+      if (isEgg40Contract(s.contract)) {
+        const { PRIVATE_STATE_ID_EGG40, createPrivateStateEgg40 } = await import('./contract-egg40');
+        await providers.privateStateProvider.seed(PRIVATE_STATE_ID_EGG40, createPrivateStateEgg40(s.sk, s.age ?? undefined));
+      } else {
+        await providers.privateStateProvider.seed(PRIVATE_STATE_ID_V3, createPrivateStateV3(s.sk, s.age ?? undefined));
+      }
     } else if (s.schema === 2) {
       await providers.privateStateProvider.seed(PRIVATE_STATE_ID_V2, createPrivateStateV2(s.sk, s.age ?? undefined));
     } else {
@@ -174,23 +184,45 @@ export class Session {
     if (!r) throw new Error(`Passport stub not reachable at ${PASSPORT_STUB}`);
     const j = await r.json(); if (!r.ok) throw new Error(j.error ?? 'Issuer error');
     this.age = parseCredential(j); localStorage.setItem(this.ageKey, JSON.stringify(j));
-    await this.P.privateStateProvider.seed(
-      this.schema === 4 ? PRIVATE_STATE_ID_V4 : this.schema === 3 ? PRIVATE_STATE_ID_V3 : this.schema === 2 ? PRIVATE_STATE_ID_V2 : PRIVATE_STATE_ID,
-      (this.schema === 4 || this.schema === 3) ? createPrivateStateV3(this.sk, this.age) : this.schema === 2 ? createPrivateStateV2(this.sk, this.age) : createPrivateState(this.sk, this.age),
-    );
+    await this.seedPrivate(this.age);
+
     this.ageChanged();
   }
   async clearAgeCredential() {
     this.age = null; localStorage.removeItem(this.ageKey);
-    await this.P.privateStateProvider.seed(
-      this.schema === 4 ? PRIVATE_STATE_ID_V4 : this.schema === 3 ? PRIVATE_STATE_ID_V3 : this.schema === 2 ? PRIVATE_STATE_ID_V2 : PRIVATE_STATE_ID,
-      (this.schema === 4 || this.schema === 3) ? createPrivateStateV3(this.sk) : this.schema === 2 ? createPrivateStateV2(this.sk) : createPrivateState(this.sk),
-    );
+    await this.seedPrivate(null);
+
     this.ageChanged();
   }
   get accountId() { return hex(pureCircuits.accountId(this.sk)); }
   userAddress(bech = this.address) { return { bytes: new Uint8Array(UnshieldedAddress.codec.decode(this.networkId, MidnightBech32m.parse(bech)).data) }; }
-  setContract(a: string) { this.contract = a; localStorage.setItem(contractStorageKey(this.schema, this.networkId), a); }
+  setContract(a: string) { this.contract = a; localStorage.setItem(contractStorageKey(this.schema, this.networkId), a); this.bindEgg40(); }
+  private bindEgg40() {
+    if (!isEgg40Contract(this.contract)) { bindEgg40SessionCall(null); bindEgg40OrgSigner(null); return; }
+    // EGG-41: relay organizer writes are signed with the metadata key bound on-chain by the key event.
+    bindEgg40OrgSigner((message) => this.signMeta(message));
+    bindEgg40SessionCall(async (circuit, args, doorSk) => {
+      const egg = await import('./session-egg40');
+      return egg.callEgg40(this as any, circuit, args, doorSk);
+    });
+  }
+  private async seedPrivate(age: typeof this.age = this.age) {
+    if (this.schema === 3 && isEgg40Contract(this.contract)) {
+      const { PRIVATE_STATE_ID_EGG40, createPrivateStateEgg40 } = await import('./contract-egg40');
+      await this.P.privateStateProvider.seed(PRIVATE_STATE_ID_EGG40, createPrivateStateEgg40(this.sk, age ?? undefined));
+      return;
+    }
+    await this.P.privateStateProvider.seed(
+      this.schema === 4 ? PRIVATE_STATE_ID_V4 : this.schema === 3 ? PRIVATE_STATE_ID_V3 : this.schema === 2 ? PRIVATE_STATE_ID_V2 : PRIVATE_STATE_ID,
+      (this.schema === 4 || this.schema === 3) ? createPrivateStateV3(this.sk, age ?? undefined) : this.schema === 2 ? createPrivateStateV2(this.sk, age ?? undefined) : createPrivateState(this.sk, age ?? undefined),
+    );
+  }
+  /** EGG-40 contract deploy (1AM). Does not select the new contract: the app uses it once VITE_EGG40_CONTRACT is set. */
+  async deployEgg40(feeAddressBech: string, onStep?: (e: { step: number; totalSteps: number; label: string; detail?: string }) => void) {
+    if (this.schema !== 3) throw new Error('EGG-40 deploys from Organizer schema 3');
+    const { deployEgg40Batched } = await import('./deployEgg40');
+    return deployEgg40Batched(this as any, feeAddressBech, stubIssuer, { onStep });
+  }
   async deploy(feeAddressBech: string) {
     if (this.schema === 4) throw new Error(V4_LOCAL_ONLY);
     if (this.schema === 3) {
@@ -215,6 +247,12 @@ export class Session {
     assertCanProveAdult(circuitId, this.ageStatus); // CT-AGE-CRED: never reach the circuit without a usable credential
     if (this.schema === 4) return callV4(this, circuitId, args);
     if (this.schema === 3) {
+      if (isEgg40Contract(this.contract)) {
+        const egg = await import('./session-egg40');
+        const r = await egg.callEgg40(this as any, circuitId, args);
+        console.log(`[t] ${new Date().toISOString().slice(11, 23)} call ${circuitId} total ${r.ms} ms`);
+        return r;
+      }
       const r = await v3.callV3(this as any, circuitId, args);
       console.log(`[t] ${new Date().toISOString().slice(11, 23)} call ${circuitId} total ${r.ms} ms`);
       return r;
@@ -240,6 +278,12 @@ export class Session {
     if (this.schema === 4) return stateV4(this);
     if (this.schema === 3) {
       try {
+        if (isEgg40Contract(this.contract)) {
+          const egg = await import('./session-egg40');
+          const st = await egg.stateEgg40(this as any);
+          if (!st) return null;
+          return st as any;
+        }
         const st = await v3.stateV3(this as any);
         if (!st) return null;
         return st as any;
@@ -287,11 +331,21 @@ export class Session {
   /** CT-MULTI-BUY: 2..4 tickets of one type in one transaction (one 1AM approval). */
   buyNightV3Multi(args: Parameters<typeof buyNightV3Multi>[1]) {
     if (this.schema !== 3) throw new Error('buyNightV3Multi requires ?schema=3');
+    if (isEgg40Contract(this.contract)) {
+      return Promise.all([import('./contract-egg40'), import('./providers-egg40')]).then(async ([egg, prov]) => {
+        // Seed EGG-40 private state first, like callEgg40 does.
+        await this.P.privateStateProvider.seed(egg.PRIVATE_STATE_ID_EGG40, egg.createPrivateStateEgg40(this.sk, this.age ?? undefined));
+        return buyNightV3Multi(this as any, args, { profile: { compiled: egg.CompiledCloakTixEgg40, privateStateId: egg.PRIVATE_STATE_ID_EGG40, ledger: egg.ledgerEgg40, P: await prov.egg40Providers(this as any) } });
+      });
+    }
     return buyNightV3Multi(this as any, args);
   }
   buyNightV3(args: Parameters<typeof v3.buyNightV3>[1]) {
     if (this.schema !== 3) throw new Error('buyNightV3 requires ?schema=3');
     if (args.adult) assertCanProveAdult('buyTicketAdult', this.ageStatus); // before the rate quote and any proving
+    if (isEgg40Contract(this.contract)) {
+      return import('./session-egg40').then((egg) => egg.buyNightEgg40(this as any, args));
+    }
     return v3.buyNightV3(this as any, args);
   }
   registerAdmitOnly(serial: bigint, meta?: { ticketName?: string; eventName?: string; typeId?: string; eventDate?: string; venue?: string; cover?: string }) {

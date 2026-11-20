@@ -7,6 +7,8 @@ const CONTRACTS = [
   { name: 'cloaktix', src: '../contract/managed/cloaktix', dst: '../web-dist-app-preview/managed/cloaktix' },
   { name: 'cloaktix-v2', src: '../contract/managed/cloaktix-v2', dst: '../web-dist-app-preview/managed/cloaktix-v2' },
   { name: 'cloaktix-rate-v3', src: '../contract/managed/cloaktix-rate-v3', dst: '../web-dist-app-preview/managed/cloaktix-rate-v3' },
+  // EGG-40 (frozen contract sha cafac326…, keys from compact 0.36.0 full compile). Served from day one so the deploy page can install its verifier keys.
+  { name: 'cloaktix-egg40', src: '../contract/managed/cloaktix-egg40', dst: '../web-dist-app-preview/managed/cloaktix-egg40' },
 ];
 const LIMIT = 5 * 1024 * 1024 - 64 * 1024, PART = 4 * 1024 * 1024;
 const sha = (b) => crypto.createHash('sha256').update(b).digest('hex');
@@ -15,7 +17,7 @@ const chunks = {}, hashes = {};
 for (const { name, src, dst } of CONTRACTS) {
   if (!fs.existsSync(`${src}/contract/index.js`)) { console.error(`MISSING managed contract: ${src}`); process.exit(1); }
   // Ledger 9: schema 1/2 are code-only (compiled --skip-zk, no keys) and cannot deploy on the reset Preview chain.
-  if (name !== 'cloaktix-rate-v3' && !fs.existsSync(`${src}/keys`)) { console.warn(`SKIP ${name}: code-only on ledger 9 (no keys)`); continue; }
+  if (name !== 'cloaktix-rate-v3' && name !== 'cloaktix-egg40' && !fs.existsSync(`${src}/keys`)) { console.warn(`SKIP ${name}: code-only on ledger 9 (no keys)`); continue; }
   const idx = fs.readFileSync(`${src}/contract/index.js`, 'utf8');
   const circuits = [...idx.slice(idx.indexOf('this.impureCircuits = {')).split('}')[0].matchAll(/(\w+): this\.circuits\./g)].map((m) => m[1]);
   const missing = [];
@@ -24,7 +26,7 @@ for (const { name, src, dst } of CONTRACTS) {
   if (missing.length) { console.error(`MISSING in ${name}:`, missing); process.exit(1); }
   console.log(`${name} circuits (${circuits.length}):`, circuits.join(', '));
   // Midnight.js 5 FetchZkConfigProvider verifies compiler/contract-manifest.json (default verify: 'require').
-  for (const dir of name === 'cloaktix-rate-v3' ? ['keys', 'zkir', 'compiler'] : ['keys', 'zkir']) {
+  for (const dir of (name === 'cloaktix-rate-v3' || name === 'cloaktix-egg40') ? ['keys', 'zkir', 'compiler'] : ['keys', 'zkir']) {
     fs.mkdirSync(`${dst}/${dir}`, { recursive: true });
     for (const f of fs.readdirSync(`${dst}/${dir}`)) if (/\.part-\d+$/.test(f)) fs.rmSync(`${dst}/${dir}/${f}`);
     // Remove stale non-part files for circuits we no longer ship (keep only current SRC set)

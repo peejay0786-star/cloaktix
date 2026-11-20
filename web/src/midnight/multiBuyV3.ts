@@ -59,23 +59,26 @@ type Deps = {
   call?: typeof submitCallTx;
   readSerialCount?: () => Promise<bigint | null>;
   ownsSerial?: (serial: bigint) => Promise<boolean>;
+  /** EGG-40: same flow on the EGG-40 contract (its compiled package, private state id, ledger and ZK providers). Default: rate-v3. */
+  profile?: MultiBuyProfile;
 };
+export type MultiBuyProfile = { compiled: unknown; privateStateId: string; ledger: (data: any) => any; P?: any };
 
-async function readSerialCount(host: SessionV3Host): Promise<bigint | null> {
+async function readSerialCount(host: SessionV3Host, ledger: (d: any) => any = ledgerV3): Promise<bigint | null> {
   try {
     if (!host.contract) return null;
     const cs = await readContractState(host.P.publicDataProvider, host.contract);
     if (!cs) return null;
-    const c = (ledgerV3(cs.data) as any).serialCount;
+    const c = (ledger(cs.data) as any).serialCount;
     return typeof c === 'bigint' ? c : typeof c === 'number' && Number.isSafeInteger(c) ? BigInt(c) : null;
   } catch { return null; }
 }
-async function ownsSerial(host: SessionV3Host, serial: bigint): Promise<boolean> {
+async function ownsSerial(host: SessionV3Host, serial: bigint, ledger: (d: any) => any = ledgerV3): Promise<boolean> {
   try {
     if (!host.contract || !host.accountId) return false;
     const cs = await readContractState(host.P.publicDataProvider, host.contract);
     if (!cs) return false;
-    const L: any = ledgerV3(cs.data);
+    const L: any = ledger(cs.data);
     if (!L.tickets.member(serial)) return false;
     const t = L.tickets.lookup(serial);
     return [...t.owner].map((b: number) => b.toString(16).padStart(2, '0')).join('') === host.accountId;
@@ -121,7 +124,7 @@ export async function buyNightV3Multi(host: SessionV3Host, args: {
     signed = await (deps.fetchQuote ?? fetchSignedRateQuote)({ networkTagHex: networkTagHexV3(host), contractKeyHex: contractKeyHexV3(host), fetcher: args.fetcher });
     ({ nightPaid, fee } = v3NightAmounts(args.priceUsdCents, signed.quote.atomsPerUsdCent, args.feeBps));
     now = nowInWindow(signed.quote.issuedAt, signed.quote.expiresAt);
-    count = await (deps.readSerialCount ?? (() => readSerialCount(host)))();
+    count = await (deps.readSerialCount ?? (() => readSerialCount(host, deps.profile?.ledger)))();
   } catch (e) {
     throw new MultiBuyError('nothing-bought', `Nothing was bought. Could not get a signed NIGHT rate: ${errText(e).slice(0, 200)}`, e);
   }
@@ -136,7 +139,7 @@ export async function buyNightV3Multi(host: SessionV3Host, args: {
   const results: bigint[] = [];
   let walletErr: unknown = null;
   let submitErr: unknown = null;
-  const P = stagedProviders(host.P, setStage, (e) => { walletErr = e; }, deps.keepIntentPerCall ? [] : calls.map((c) => c.args[1] as Uint8Array), (e) => { submitErr = e; });
+  const P = stagedProviders(deps.profile?.P ?? host.P, setStage, (e) => { walletErr = e; }, deps.keepIntentPerCall ? [] : calls.map((c) => c.args[1] as Uint8Array), (e) => { submitErr = e; });
   const stop = onLocalProof((e) => {
     if (circuitOfKeyLocation(e.keyLocation) !== 'buyTicket') return;
     if (e.phase === 'start' && S.stage === 'building') setStage('proving');
@@ -146,8 +149,8 @@ export async function buyNightV3Multi(host: SessionV3Host, args: {
   try {
     fin = await (deps.scoped ?? withLedger9ContractScopedTransaction)(P, async (ctx: any) => {
       for (const c of calls) {
-        const r: any = await (deps.call ?? (submitCallTx as any))(P, { compiledContract: CompiledCloakTixV3, contractAddress: host.contract!,
-          privateStateId: PRIVATE_STATE_ID_V3, circuitId: c.circuit, args: c.args } as any, ctx);
+        const r: any = await (deps.call ?? (submitCallTx as any))(P, { compiledContract: deps.profile?.compiled ?? CompiledCloakTixV3, contractAddress: host.contract!,
+          privateStateId: deps.profile?.privateStateId ?? PRIVATE_STATE_ID_V3, circuitId: c.circuit, args: c.args } as any, ctx);
         results.push(r?.private?.result as bigint);
       }
     }, { scopeName: `cloaktix-multi-buy-${qty}` } as any);
@@ -155,7 +158,7 @@ export async function buyNightV3Multi(host: SessionV3Host, args: {
     const t = errText(e);
     if (S.stage === 'submitting' || S.stage === 'confirming') {
       // Submitted: the chain decides. Never tell the buyer "nothing bought" if their tickets exist.
-      const own = deps.ownsSerial ?? ((s: bigint) => ownsSerial(host, s));
+      const own = deps.ownsSerial ?? ((s: bigint) => ownsSerial(host, s, deps.profile?.ledger));
       const all = (await Promise.all(Array.from({ length: qty }, (_, i) => own(first + BigInt(i))))).every(Boolean);
       if (all) { fin = { public: { txId: '' }, recovered: true }; for (let i = 0; i < qty; i++) results[i] = first + BigInt(i); }
       else if (S.stage === 'submitting' && submitErr !== null && isNodeRejection(errText(submitErr))) {

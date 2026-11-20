@@ -215,6 +215,254 @@
   "size": 9262,
   "sha256": "952899088523fc56b5e055450be54ee4dd7f81d4f229304825609ee882dbff60"
  },
+ "/managed/cloaktix-egg40/keys/addTicketType.prover": {
+  "size": 11278094,
+  "sha256": "1811fc899137bb475c56ae3d8cfe650870ee6a137fd4a2188f6611a9838711df"
+ },
+ "/managed/cloaktix-egg40/keys/addTicketType.verifier": {
+  "size": 2121,
+  "sha256": "c60ab84d3fc89214f4359f83bff6b3c87db2cdc0e9133395a2a32e225b7927c3"
+ },
+ "/managed/cloaktix-egg40/keys/adminSet.prover": {
+  "size": 12326834,
+  "sha256": "080c7be4a0bc27eae6a39e137125deed3f5c9d7161b838f6f1b81be023c99024"
+ },
+ "/managed/cloaktix-egg40/keys/adminSet.verifier": {
+  "size": 2313,
+  "sha256": "511019ec891c52e4a0d4df6deb0cb4ebd348d5f0258c94a4a3318e6d2152935e"
+ },
+ "/managed/cloaktix-egg40/keys/admit.prover": {
+  "size": 22550961,
+  "sha256": "6228d7dfd2654848ad08130118b9c3343fa77bafeae3dc15192481e84e16541e"
+ },
+ "/managed/cloaktix-egg40/keys/admit.verifier": {
+  "size": 2121,
+  "sha256": "4805662155df1621bcd1d892dfc591041e5cb3b2d52387155d978ef5d774bbad"
+ },
+ "/managed/cloaktix-egg40/keys/admitByDoor.prover": {
+  "size": 11279475,
+  "sha256": "3f7790e7a5bb17929590155860a3af862912f5755df586c00b413ec9de87cc25"
+ },
+ "/managed/cloaktix-egg40/keys/admitByDoor.verifier": {
+  "size": 2121,
+  "sha256": "7f16a2decde468fe308a2e539ca4894dd7c1830e613688ecaeccb3df96d4f560"
+ },
+ "/managed/cloaktix-egg40/keys/admitByDoor4.prover": {
+  "size": 45101287,
+  "sha256": "149a3a55ff04db0fe870d263d1397e6f8206ff61efa65f0f45571516153eaf96"
+ },
+ "/managed/cloaktix-egg40/keys/admitByDoor4.verifier": {
+  "size": 2121,
+  "sha256": "bfabe5af02c879717bd0194dac95438a248a79541c96fa5f31e9dc97dd323d0b"
+ },
+ "/managed/cloaktix-egg40/keys/authorizeDoorKey.prover": {
+  "size": 11278569,
+  "sha256": "410e2aae385ad365ff004b145981c6e6a2d2cf1dfdf62be156cc233905e34e09"
+ },
+ "/managed/cloaktix-egg40/keys/authorizeDoorKey.verifier": {
+  "size": 2121,
+  "sha256": "a13f4df1398afeaea64bf5def15d7ac6b9eb43cfb29152cad214cb91f5f96871"
+ },
+ "/managed/cloaktix-egg40/keys/buyResale.prover": {
+  "size": 49296786,
+  "sha256": "711a18603ca8bb561151470166f1bd157491f526e6ddcd01bbd8c9b16d91637b"
+ },
+ "/managed/cloaktix-egg40/keys/buyResale.verifier": {
+  "size": 2313,
+  "sha256": "79ce9ec76e37ade2088c0e2ae5a18a80d0fb8fc34428e49b0d6d14ec978f5cbd"
+ },
+ "/managed/cloaktix-egg40/keys/buyResaleAdult.prover": {
+  "size": 49296920,
+  "sha256": "03c2b66764f9ffc1185b8323646dd56b6c82af11981736ba2f56d1da42012c16"
+ },
+ "/managed/cloaktix-egg40/keys/buyResaleAdult.verifier": {
+  "size": 2313,
+  "sha256": "cf1683ef4234471769bfa0ecf41749cc6120c7f6514fa62650087ed01168a76b"
+ },
+ "/managed/cloaktix-egg40/keys/buyTicket.prover": {
+  "size": 24654322,
+  "sha256": "2b0fd6aa361d561007c32c4588964de90b5af87b4fdfc7913b000fd66003aac1"
+ },
+ "/managed/cloaktix-egg40/keys/buyTicket.verifier": {
+  "size": 2313,
+  "sha256": "14d5bbc857f92781a010b586c758e7eba1d23c72e6857a1120cdf990b017b641"
+ },
+ "/managed/cloaktix-egg40/keys/buyTicketAdult.prover": {
+  "size": 49297333,
+  "sha256": "e08dee35107452095fd74bbb0f5ea930d2e7939c09c62374628f03b0d90f66db"
+ },
+ "/managed/cloaktix-egg40/keys/buyTicketAdult.verifier": {
+  "size": 2313,
+  "sha256": "1e93120898bbc19368771ca0d1a347ebdf2e5ba660df627a189b845364121ede"
+ },
+ "/managed/cloaktix-egg40/keys/createEvent.prover": {
+  "size": 11277303,
+  "sha256": "98fa6ae96acc31bf714e9748b1de2bf9ffec9e6c9e96f0978720b57eb52797c7"
+ },
+ "/managed/cloaktix-egg40/keys/createEvent.verifier": {
+  "size": 2121,
+  "sha256": "d1833d264bdea89f8e9d09adff523cf8cc371905b7c551ea000ea03dc99d03de"
+ },
+ "/managed/cloaktix-egg40/keys/listForResale.prover": {
+  "size": 11278916,
+  "sha256": "d5190b85cec185d3e86c573cc32a722ea79d5cdbbb7201e1d4c0a18a44e11cc3"
+ },
+ "/managed/cloaktix-egg40/keys/listForResale.verifier": {
+  "size": 2121,
+  "sha256": "34f71937db0d478f008fd2e5fa0c4a3cd81bb37180aa102b73342d76c468f79d"
+ },
+ "/managed/cloaktix-egg40/keys/registerAdmit.prover": {
+  "size": 11277956,
+  "sha256": "a484583cd2668e273c37f7f795ac852e8fa7e020b86192023b49c2564041a5e4"
+ },
+ "/managed/cloaktix-egg40/keys/registerAdmit.verifier": {
+  "size": 2121,
+  "sha256": "4ed7efd6f9d3f9c43a8c207c9ea89b62b0520f3c54f361a42b03a0dd45048c85"
+ },
+ "/managed/cloaktix-egg40/keys/revokeDoorKey.prover": {
+  "size": 11277839,
+  "sha256": "9be6aaf547fcd22df68155e4b1b39b4b47f952e8f6d2e88e36bca3648900307e"
+ },
+ "/managed/cloaktix-egg40/keys/revokeDoorKey.verifier": {
+  "size": 2121,
+  "sha256": "8220db6c8336225147ed3cbc2975b538ac1c1a753d2f8cec25629d2eadcd2601"
+ },
+ "/managed/cloaktix-egg40/keys/setSalesOpen.prover": {
+  "size": 11277395,
+  "sha256": "b16dfd46fd1d2a11e3aa64e207f2c11882ec32eb385cbdd8632158cd11bf8c65"
+ },
+ "/managed/cloaktix-egg40/keys/setSalesOpen.verifier": {
+  "size": 2121,
+  "sha256": "6dcf0c6a1303eda23001583dbef172a048436570e10caffc9cc254550ce54203"
+ },
+ "/managed/cloaktix-egg40/zkir/addTicketType.bzkir": {
+  "size": 1534,
+  "sha256": "6569b17766b14bcd3fede9988585c3942604f61959450f2d3c9d332e70cd3347"
+ },
+ "/managed/cloaktix-egg40/zkir/addTicketType.zkir": {
+  "size": 5299,
+  "sha256": "06f605894cbb2211a15c7620ef74e9fde5584efd74f2545044a766636915910b"
+ },
+ "/managed/cloaktix-egg40/zkir/adminSet.bzkir": {
+  "size": 1298,
+  "sha256": "0668633e6503377f439d8b3dc653471b7a972d767087689a9210f608f92d8d1d"
+ },
+ "/managed/cloaktix-egg40/zkir/adminSet.zkir": {
+  "size": 3406,
+  "sha256": "c0dde83eab6582615ba97ebbbcf7b6984812aa3d1164a907caccee20f27db644"
+ },
+ "/managed/cloaktix-egg40/zkir/admit.bzkir": {
+  "size": 2209,
+  "sha256": "4979e6c5f7293c631c48ace586e212f4c113832b178a615fb3fa1e049063a49a"
+ },
+ "/managed/cloaktix-egg40/zkir/admit.zkir": {
+  "size": 8435,
+  "sha256": "f9355bb8b7a0c03931cff9cd401f00b299076bbe471236e0c5b737f319f47227"
+ },
+ "/managed/cloaktix-egg40/zkir/admitByDoor.bzkir": {
+  "size": 2915,
+  "sha256": "c4eeeaba6fbfd86f78d23ff04cf7a7b65e6115885aa571d92dca6132d99dcead"
+ },
+ "/managed/cloaktix-egg40/zkir/admitByDoor.zkir": {
+  "size": 10344,
+  "sha256": "dc27337a02d974d98d480452dc66d4521bc6f2bff8dd1bff127d23f7a8fa557b"
+ },
+ "/managed/cloaktix-egg40/zkir/admitByDoor4.bzkir": {
+  "size": 8151,
+  "sha256": "1207fb8b634215fa63319c63584cc9e943a652113e201404eda91fc864282c5c"
+ },
+ "/managed/cloaktix-egg40/zkir/admitByDoor4.zkir": {
+  "size": 29224,
+  "sha256": "91a5e1a5eaf5eb50b400679a28e6cb3555de5ba3fbb0b201609c818b5d146771"
+ },
+ "/managed/cloaktix-egg40/zkir/authorizeDoorKey.bzkir": {
+  "size": 2009,
+  "sha256": "7e27996bf15d7d4eb6117f1946b393a18dfea6c012d02b5aa620232de7bc5e96"
+ },
+ "/managed/cloaktix-egg40/zkir/authorizeDoorKey.zkir": {
+  "size": 6553,
+  "sha256": "2c53528293d71d293d1d890dfa08452c8db06fefbf720ca7cd7b5a4d64f7d22f"
+ },
+ "/managed/cloaktix-egg40/zkir/buyResale.bzkir": {
+  "size": 8946,
+  "sha256": "fb8da0a0ccfd8199a06c5629bc9b3877f89f59a4f89b728a46b4e1174642293f"
+ },
+ "/managed/cloaktix-egg40/zkir/buyResale.zkir": {
+  "size": 28253,
+  "sha256": "6d54ef62b64c8eca2d57fa714610294a82d49e70ae2e1b4506e401550984c2f6"
+ },
+ "/managed/cloaktix-egg40/zkir/buyResaleAdult.bzkir": {
+  "size": 9080,
+  "sha256": "e609ec5b6e51ce1c5d05432ed12cd9796284c2bc279e5442b51ee2b3f2dbccaf"
+ },
+ "/managed/cloaktix-egg40/zkir/buyResaleAdult.zkir": {
+  "size": 30527,
+  "sha256": "36537a1334f43eef46cf42c063c866a5a8e4a3fd636b01a5e21e8d434f3540bc"
+ },
+ "/managed/cloaktix-egg40/zkir/buyTicket.bzkir": {
+  "size": 8018,
+  "sha256": "84330d2a6a2a82046962ffa8904dddc5d5b92096261c8790535881b99f6ebcaa"
+ },
+ "/managed/cloaktix-egg40/zkir/buyTicket.zkir": {
+  "size": 25653,
+  "sha256": "ded755cc5a8302830da8ae2d820a22194f39697680ca2b5dd41af26e95497f68"
+ },
+ "/managed/cloaktix-egg40/zkir/buyTicketAdult.bzkir": {
+  "size": 9493,
+  "sha256": "6dc81ffcf40e8e97ddbae160c3d0b593551fbb44d8cff9db82830ac1ae082a9e"
+ },
+ "/managed/cloaktix-egg40/zkir/buyTicketAdult.zkir": {
+  "size": 31560,
+  "sha256": "4777abe713290ea241e12425c382d9937702cb4c19b03c19f64c701cc4c32c60"
+ },
+ "/managed/cloaktix-egg40/zkir/createEvent.bzkir": {
+  "size": 743,
+  "sha256": "0e68c842baef078343c019ad0b99fce2f3392ebc4bce16b6d5eb5e98f93e9b1a"
+ },
+ "/managed/cloaktix-egg40/zkir/createEvent.zkir": {
+  "size": 2728,
+  "sha256": "0c5efeb4ab0ea6430a784bf49453def80d07d7a3a2d50125486c06d307d6d8db"
+ },
+ "/managed/cloaktix-egg40/zkir/listForResale.bzkir": {
+  "size": 2356,
+  "sha256": "98cb1beff818edf0d4a5a7cb64103178fc70004dc3a48899b1555043f548d4b1"
+ },
+ "/managed/cloaktix-egg40/zkir/listForResale.zkir": {
+  "size": 8444,
+  "sha256": "49661ae43fca2d754617d9c125fd870515d65e07ebf3affa1c39c4046be1196c"
+ },
+ "/managed/cloaktix-egg40/zkir/registerAdmit.bzkir": {
+  "size": 1396,
+  "sha256": "cca60501043d45e5c1f6d7ac058d010df553b05c08b1ca651199f93b97f7c26a"
+ },
+ "/managed/cloaktix-egg40/zkir/registerAdmit.zkir": {
+  "size": 4915,
+  "sha256": "3886b14d324a9a7a02f126d30cc5ef4cbd3632d4f364cdf2cf4f29a82d050ce3"
+ },
+ "/managed/cloaktix-egg40/zkir/revokeDoorKey.bzkir": {
+  "size": 1279,
+  "sha256": "9a0abdfe301a572589ebfadfb4b4700e36b2553826555576dd2757c165fb0be5"
+ },
+ "/managed/cloaktix-egg40/zkir/revokeDoorKey.zkir": {
+  "size": 4048,
+  "sha256": "b00dc36f629badbb0c684c1af1aaedf68b42f328e3620ba31ff547c841af42bb"
+ },
+ "/managed/cloaktix-egg40/zkir/setSalesOpen.bzkir": {
+  "size": 835,
+  "sha256": "8d18c63dc1d114e17a8dfebe963f8e9ad4ee3becbca543f9e906897c6eb7af0e"
+ },
+ "/managed/cloaktix-egg40/zkir/setSalesOpen.zkir": {
+  "size": 3101,
+  "sha256": "a4e4d935b23da4763e8d55d724c3e5b21c7ee91232b07910cc15eacd0a095f52"
+ },
+ "/managed/cloaktix-egg40/compiler/contract-info.json": {
+  "size": 36801,
+  "sha256": "2c83989f505232b99faabafc9779b5db8ca7938d5f2a01a811b29c083b671ea3"
+ },
+ "/managed/cloaktix-egg40/compiler/contract-manifest.json": {
+  "size": 10536,
+  "sha256": "a63d7b5e81c02a060e7c2a89ce24acea3c9d7461941236ef9b4acce172bc8733"
+ },
  "/managed/zk-params/bls_midnight_2p10": {
   "size": 196996,
   "sha256": "46b2290933cbed4c378889e4ba971f1a92888331ffb09466acd4ff61a1e2cb42"

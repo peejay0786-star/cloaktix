@@ -36,7 +36,7 @@ export default defineConfig({
   },
   server: {
     port: 5180, strictPort: true, host: '127.0.0.1', headers: isolation,
-    fs: { allow: [path.resolve(__dirname, '..'), path.resolve(__dirname, '../../examples')] },
+    fs: { allow: [path.resolve(__dirname, '..'), path.resolve(__dirname, '../../examples'), path.resolve('/workspace/cloaktix-audit')] },
     // Pont wallet de dev (devnet local uniquement) + fichiers publics du prouveur
     proxy: { '/devwallet': BRIDGE, '/zk': BRIDGE },
   },

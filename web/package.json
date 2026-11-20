@@ -26,6 +26,7 @@
     "@midnight-ntwrk/onchain-runtime-v4": "4.0.0",
     "@midnight-ntwrk/wallet-sdk-address-format": "4.0.0",
     "@midnightntwrk/zkir-v3": "3.2.0",
+    "barcode-detector": "3.2.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },

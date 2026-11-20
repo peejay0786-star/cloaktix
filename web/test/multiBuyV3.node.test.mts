@@ -110,6 +110,20 @@ describe('buyNightV3Multi control flow (fakes, no proofs)', () => {
     assert.ok(r.tickets.every((t: any) => t.cap && t.cap !== r.tickets[0].cap || t === r.tickets[0]));
     assert.ok(prog.includes('Approve 1 transaction for 2 tickets in your wallet…'), prog.join('|'));
   });
+  it('EGG-40 profile: same one-scope flow, but EGG-40 compiled package, private state, ledger and providers', async () => {
+    const seen: any[] = []; let balances = 0; const usedP: any[] = [];
+    const host = fakeHost(async (t) => { balances++; return t; });
+    const eggP = { ...host.P, tag: 'egg40-providers' };
+    const compiled = { tag: 'egg40-compiled' };
+    const scoped = async (P: any, fn: any) => { usedP.push(P); return fakeScoped()(P, fn); };
+    const r = await B.buyNightV3Multi(host, { typeId: 2n, qty: 2, priceUsdCents: 5000n, feeBps: 300n },
+      { fetchQuote: async () => quote, readSerialCount: async () => 7n, scoped: scoped as any, call: fakeCall(8n, seen) as any,
+        profile: { compiled, privateStateId: 'cloaktix-egg40', ledger: () => ({}), P: eggP } });
+    assert.deepEqual(seen.map((o) => o.compiledContract), [compiled, compiled]);
+    assert.deepEqual(seen.map((o) => o.privateStateId), ['cloaktix-egg40', 'cloaktix-egg40']);
+    assert.equal(usedP[0].tag, 'egg40-providers', 'EGG-40 ZK providers');
+    assert.equal(balances, 1); assert.deepEqual(r.tickets.map((t: any) => t.serial), [8n, 9n]);
+  });
   it('wallet refuses the multi-call tx: "nothing bought" + offer one at a time', async () => {
     const host = fakeHost(async () => { throw new Error('Unsupported transaction: more than one contract call'); });
     const e: any = await B.buyNightV3Multi(host, { typeId: 2n, qty: 3, priceUsdCents: 5000n, feeBps: 300n },

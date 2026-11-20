@@ -1,4 +1,6 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { onLocalProof } from './midnight/localProver';
+import { errorChainText, humanizeTxError } from './txError';
 import { Dialog } from './Dialog';
 import { Price, formatNight } from './Price';
 import { useRates } from './useRates';
@@ -16,8 +18,10 @@ export function QtyPicker({ qty, max, onChange, disabled }: { qty: number; max: 
     </select></label>;
 }
 
-export function CheckoutPanel({ amount, usdCents, onPay, busy = false, error = '', qty = 1, maxQty = 1, onQty, progress, onOneAtATime }: {
+export function CheckoutPanel({ amount, usdCents, onPay, busy = false, error = '', qty = 1, maxQty = 1, onQty, progress, onOneAtATime, buyStep }: {
   amount: bigint; usdCents?: bigint; onPay: () => void; busy?: boolean; error?: string;
+  /** EGG-44: current buy step (single purchase), shown with a timer. */
+  buyStep?: { step: BuyStep; since: number } | null;
   /** CT-MULTI-BUY (v3 only): quantity, picker bound, live progress, and the one-at-a-time fallback offer. */
   qty?: number; maxQty?: number; onQty?: (q: number) => void; progress?: string; onOneAtATime?: () => void;
 }) {
@@ -31,7 +35,7 @@ export function CheckoutPanel({ amount, usdCents, onPay, busy = false, error = '
       <p className="payment-night">{tt.totalNight !== null ? `≈ ${tt.totalNight.toFixed(2)} NIGHT total (exact amount locked by one signed quote when you pay)` : 'NIGHT rate unavailable'}</p>
       <p role="status" className="note">1 approval in 1AM for all {qty} tickets. All or nothing: if the transaction fails, nothing is bought.</p>
       <p className="small muted">Each ticket is proved on this device first (about 40 s per ticket on a computer, longer on a phone). Each one gets its own entry QR in My tickets.</p>
-      {progress && busy ? <p role="status" className="note progress">{progress}</p> : null}
+      {progress && busy ? <p role="status" className="note progress">{progress}</p> : busy && buyStep ? <BuyProgress step={buyStep.step} since={buyStep.since} /> : null}
       {error ? <p role="alert" className="warn">{error}</p> : null}
       {error && onOneAtATime ? <button type="button" className="ghost wide" onClick={onOneAtATime}>Buy one at a time instead</button> : null}
       <p className="small muted">USD and NIGHT are reference estimates, not locked quotes. Preview test assets have no cash value.</p>
@@ -49,13 +53,57 @@ export function CheckoutPanel({ amount, usdCents, onPay, busy = false, error = '
     <p className={usdCents !== undefined ? 'payment-night' : 'payment-amount'}>{nightLabel}</p>
     <p role="status" className="note">Pay from your Midnight wallet. NIGHT on Cardano isn&apos;t accepted.</p>
     <p className="small muted">NIGHT on Midnight only. After payment, find your pass in My tickets to print, show QR or Send to phone.</p>
-    {error ? <p role="alert" className="warn">{error}</p> : null}
+    {busy && buyStep ? <BuyProgress step={buyStep.step} since={buyStep.since} /> : null}
+    {error && !busy ? <p role="alert" className="warn">{error}</p> : null}
     <p className="small muted">USD and NIGHT are reference estimates, not locked quotes. Preview test assets have no cash value.</p>
-    <PendingButton type="button" className="primary big" pending={busy} pendingLabel={PENDING_WALLET} disabled={busy || !!error} onClick={() => { if (!busy) onPay(); }}>
+    <PendingButton type="button" className="primary big" pending={busy} pendingLabel={buyStep ? BUY_STEP_LABEL[buyStep.step] : PENDING_WALLET} disabled={busy || !!error} onClick={() => { if (!busy) onPay(); }}>
       Pay with NIGHT on Midnight
     </PendingButton>
     <p className="small muted market-data">Market data: <a href="https://www.coingecko.com/" target="_blank" rel="noreferrer">CoinGecko</a> · <a href="https://www.kraken.com/" target="_blank" rel="noreferrer">Kraken</a></p>
   </section>;
+}
+
+/**
+ * EGG-44: visible buy steps. The proof is built on this device before 1AM opens (tens of seconds); without this the
+ * button only said it was waiting for the wallet. Driven by the in-tab prover events, so it never changes payment order.
+ */
+export type BuyStep = 'preparing' | 'proving' | 'wallet';
+export const BUY_STEP_LABEL: Record<BuyStep, string> = {
+  preparing: 'Preparing your purchase…',
+  proving: 'Building proof…',
+  wallet: 'Approve in your wallet, then confirming on Midnight…',
+};
+export const BUY_STEP_HINT: Record<BuyStep, string> = {
+  preparing: 'Getting a signed NIGHT price and the ticket keys.',
+  proving: 'Building the proof on this device. 1AM opens after that, usually within a minute on a computer (longer on a phone). Keep this tab open.',
+  wallet: 'Check your 1AM wallet and approve. After approval the ticket appears once Midnight confirms it.',
+};
+export function buyStepAfter(step: BuyStep, e: { phase: 'start' | 'done' | 'error' }): BuyStep {
+  return e.phase === 'start' ? 'proving' : e.phase === 'done' ? 'wallet' : step;
+}
+export function useBuySteps(active: boolean): { step: BuyStep; since: number } | null {
+  const [state, setState] = useState<{ step: BuyStep; since: number } | null>(null);
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (!active) { setState(null); return; }
+    setState({ step: 'preparing', since: Date.now() });
+    const off = onLocalProof((e) => setState((cur) => { const step = buyStepAfter(cur?.step ?? 'preparing', e); return cur && cur.step === step ? cur : { step, since: Date.now() }; }));
+    const t = setInterval(() => setTick((n) => n + 1), 1000);
+    return () => { off(); clearInterval(t); };
+  }, [active]);
+  return state;
+}
+const clock = (ms: number) => { const s = Math.max(0, Math.floor(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
+export function BuyProgress({ step, since, now = Date.now() }: { step: BuyStep; since: number; now?: number }) {
+  return <div className="buy-progress" role="status" aria-live="polite">
+    <p className="note progress"><span className="spin" aria-hidden="true" /> <b>{BUY_STEP_LABEL[step]}</b> <span className="mono">{clock(now - since)}</span></p>
+    <p className="small muted">{BUY_STEP_HINT[step]}</p>
+  </div>;
+}
+/** Wallet / SDK failure as readable text inside Checkout. */
+export function buyErrorText(e: unknown): string {
+  const m = humanizeTxError(errorChainText(e)).trim();
+  return m || 'The purchase did not finish. Check My tickets before trying again.';
 }
 
 export type MultiPurchase = {
@@ -81,6 +129,7 @@ export function PurchaseButton({ amount, usdCents, disabled, legacyNightPurchase
   const method: PaymentMethod = 'NIGHT';
   const paying = useRef(false);
   const [error, setError] = useState('');
+  const buyStep = useBuySteps(busy);
   const pay = async () => {
     if (error || paying.current || disabled || !canPay(method)) return;
     paying.current = true; setBusy(true);
@@ -89,7 +138,7 @@ export function PurchaseButton({ amount, usdCents, disabled, legacyNightPurchase
       else await executeSelectedPayment(method, legacyNightPurchase);
       setOpen(false); setError(''); setQty(1);
     } catch (e: any) {
-      setError(String(e?.message ?? e)); setOneAtATime(qty > 1 && (e?.kind === 'wallet-refused-multi' || e?.kind === 'network-rejected'));
+      setError(buyErrorText(e)); setOneAtATime(qty > 1 && (e?.kind === 'wallet-refused-multi' || e?.kind === 'network-rejected'));
     } finally {
       paying.current = false; setBusy(false); setProgress('');
     }
@@ -101,7 +150,7 @@ export function PurchaseButton({ amount, usdCents, disabled, legacyNightPurchase
       {usdCents !== undefined ? <Price usdCents={String(usdCents)} compactNight /> : <Price amount={amount} compactNight />}
     </div>
     {open && <Dialog label="Checkout" onClose={() => { if (!busy) setOpen(false); }}><div className="card checkout-dialog">
-      <CheckoutPanel amount={amount} usdCents={usdCents} onPay={() => { void pay(); }} busy={busy} error={error}
+      <CheckoutPanel amount={amount} usdCents={usdCents} onPay={() => { void pay(); }} busy={busy} error={error} buyStep={buyStep}
         qty={qty} maxQty={max} onQty={max > 1 ? (q) => { setQty(q); setError(''); setOneAtATime(false); } : undefined} progress={progress}
         onOneAtATime={oneAtATime ? () => { setQty(1); setError(''); setOneAtATime(false); } : undefined} />
       <button type="button" className="ghost wide checkout-close" disabled={busy} onClick={() => setOpen(false)}>Close</button>

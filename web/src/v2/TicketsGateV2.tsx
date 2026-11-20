@@ -9,6 +9,7 @@ import { saveAdmitDetails } from './prepareAdmit';
 import { savedTicketItems, ticketMetadata } from './ticketLibraryModel';
 import { TransferTicket } from './TransferTicket';
 import { matchingPreparedTicket } from './simpleTicket';
+import { useResaleLocked } from '../doorkeys/hooks';
 /**
  * Serial-ticket (schema 2/3) buyer and organizer gate UI.
  * Never calls checkIn. Phone export is fragment/QR capability (not sk).
@@ -18,7 +19,12 @@ import { useEffect, useState } from 'react';
 import type { Session } from '../midnight/types';
 import { sdkOrThrow } from '../midnight/load';
 import { cameraScanSupported, Scanner } from '../Scanner';
+import { DoorVerdict } from '../DoorVerdict';
+import { doorVerdictCopy } from '../mapDoorVerdict';
 import { PendingButton, PENDING_WALLET } from '../PendingButton';
+import { AdmitQueueBar, sessionAdmitSubmitter, useAdmitQueue, useAutoCommit } from '../AdmitQueue';
+import { instantAdmit } from '../midnight/instantAdmit';
+import { getGateAdmitStore } from '../midnight/gateAdmitStore';
 import { type AdmitCapabilityV2 } from './admitCodec';
 import { loadSavedAdmits, upsertSavedAdmit } from './admitStore';
 
@@ -53,6 +59,7 @@ export function TicketsV2({
 }) {
   const rates=useRates();
   const [resale, setResale] = useState<Record<string, string>>({});
+  const resaleLocked = useResaleLocked(st?.types.map((t: { eventId: bigint }) => t.eventId) ?? []);
   const [phone, setPhone] = useState<{ cap: AdmitCapabilityV2 } | null>(null);
   const [busySerial, setBusySerial] = useState<string | null>(null);
   const owned = (st?.ownedTickets ?? []) as Array<{
@@ -137,6 +144,7 @@ export function TicketsV2({
         {!item.cap && <PendingButton pending={busySerial===`prepare:${item.serial}`} pendingLabel={PENDING_WALLET} disabled={!!busySerial && busySerial.endsWith(`:${item.serial}`)} onClick={()=>{
           if(!ticket.hasAdmit || confirm('Replace the missing ticket link? Previous copies will stop working.'))void prepare(ticket.serial,ticket.typeId);
         }}>{ticket.hasAdmit ? 'Recover missing ticket link' : 'Prepare ticket'}</PendingButton>}
+        {!!type && resaleLocked(type.eventId) ? <p className="small muted">Doors are open. Resale is closed for this event.</p> : <>
         {mode===NO_RESALE && <p className="small muted">Resale is not allowed for this ticket.</p>}
         {mode!==NO_RESALE && <details className="resell"><summary>Resale options</summary>
           <div className="row"><input aria-label="Resale price in USD" placeholder="USD" value={price} onChange={(e)=>setResale({...resale,[item.serial]:e.target.value})} />
@@ -144,6 +152,7 @@ export function TicketsV2({
           {parsedPrice.kind!=='ready' && <p role="alert" className="warn">{parsedPrice.message}</p>}
           <p className="small muted">Listing invalidates existing ticket copies.</p>
         </details>}
+        </>}
       </>;
     }} />
     {phone && <PhoneAdmitModal cap={phone.cap} onClose={()=>setPhone(null)} />}
@@ -174,6 +183,8 @@ function LegacyGateV2({
   const [r, setR] = useState<any>(null);
   const [b, setB] = useState(false);
   const [cam, setCam] = useState(false);
+  const [camMsg, setCamMsg] = useState<string | null>(null);
+  const queue = useAdmitQueue(s.contract);
   const types = st?.types ?? [];
   const [acc, setAcc] = useState('');
   const accept = acc || (types.length ? `t:${types[0].id}` : '');
@@ -181,16 +192,31 @@ function LegacyGateV2({
     ? types.filter((t: any) => `e:${t.eventId}` === accept).map((t: any) => t.id)
     : types.filter((t: any) => `t:${t.id}` === accept).map((t: any) => t.id);
 
+  const schema = s.schema === 3 ? 3 : 2;
   const verify = async (c = code) => {
     setB(true);
     setR(null);
     try {
-      setR(await s.admitAtGate(c, accepted));
+      if (!s.contract) throw new Error('Select an event contract.');
+      const result = await instantAdmit({
+        store: getGateAdmitStore(),
+        networkId: s.networkId,
+        contract: s.contract,
+        schema,
+        text: c,
+        state: st,
+        online: !!st && (typeof navigator === "undefined" || navigator.onLine),
+        acceptedTypeIds: accepted,
+        doorLabel: evName(s, accept.startsWith('e:') ? BigInt(accept.slice(2)) : (types.find((tt: { id: bigint }) => `t:${tt.id}` === accept)?.eventId ?? 0n)),
+      });
+      setR(result);
     } catch (e: any) {
       setR({ ok: false, reason: String(e?.message ?? e) });
     }
     setB(false);
   };
+  const flushQueue = () => { void queue.commit(sessionAdmitSubmitter((circuit, args) => s.call(circuit, args))); };
+  useAutoCommit(queue.shouldAuto && !queue.committing, flushQueue);
 
   if (!s.contract || !st) return <p className="muted">Select an event contract.</p>;
   return (
@@ -215,8 +241,7 @@ function LegacyGateV2({
           </select>
         </label>
         <p className="muted">
-          Scan a <code>cloaktix:admit:v2</code> code. You must be the event organizer. This calls on-chain{' '}
-          <code>admit</code> (not v1 checkIn). Serial alone cannot consume.
+          Scan a <code>cloaktix:admit:v2</code> code. You must be the event organizer. The door checks the ticket off-chain and shows a verdict immediately. On-chain <code>admit</code> is recorded later in a batch (not v1 checkIn). Serial alone cannot consume.
         </p>
         <div className="row">
           <input
@@ -224,20 +249,30 @@ function LegacyGateV2({
             value={code}
             onChange={(e) => setCode(e.target.value)}
           />
-          <PendingButton className="primary" pending={b} pendingLabel={PENDING_WALLET} disabled={b || !code} onClick={() => verify()}>
+          <PendingButton className="primary" pending={b} pendingLabel="Checking…" disabled={b || !code} onClick={() => verify()}>
             Admit
           </PendingButton>
           <button
             onClick={() => {
-              if (cameraScanSupported()) setCam(true);
+              if (cameraScanSupported()) { setCam(true); setCamMsg(null); }
+              else setCamMsg('Camera scanning is not available in this browser. Paste the code instead.');
             }}
           >
             Scan
           </button>
         </div>
+        {camMsg && <p className="warn small">{camMsg}</p>}
         {cam && (
           <Scanner
+            title={(() => {
+              const ev = accept.startsWith('e:')
+                ? st.events.find((e: { id: bigint }) => `e:${e.id}` === accept)
+                : types.find((tt: { id: bigint; eventId: bigint }) => `t:${tt.id}` === accept);
+              return ev ? evName(s, 'eventId' in ev ? ev.eventId : ev.id) : 'Check-in';
+            })()}
+            pendingCount={queue.pending}
             onClose={() => setCam(false)}
+            onPaste={() => { setCam(false); setCamMsg('Paste the ticket code in the field above.'); }}
             onCode={(c) => {
               setCam(false);
               setCode(c);
@@ -245,23 +280,26 @@ function LegacyGateV2({
             }}
           />
         )}
-        {r && (
-          <div className={r.ok ? 'verdict ok' : 'verdict ko'}>
-            {r.ok ? (
-              <>
-                ✓ Admitted: {ttName(s, r.typeId)}
-                <small>
-                  serial {String(r.serial)} · tx {String(r.txId).slice(0, 12)}…
-                </small>
-              </>
-            ) : (
-              <>
-                ✕ Refused<small>{r.reason}</small>
-              </>
-            )}
-          </div>
-        )}
+        {r && (() => {
+          const v = doorVerdictCopy({
+            ok: !!r.ok,
+            reason: r.reason,
+            typeName: r.ok ? ttName(s, r.typeId) : undefined,
+            meta: r.ok ? `serial ${String(r.serial)}` : '',
+            firstAdmittedAt: r.firstAdmittedAt,
+            firstAdmittedDoor: r.firstAdmittedDoor,
+            recordingPending: !!r.ok && !!r.recordingPending,
+          });
+          return <DoorVerdict {...v} doorLabel={r.doorLabel} onNext={() => setR(null)} />;
+        })()}
       </div>
+      <AdmitQueueBar
+        pending={queue.pending}
+        committing={queue.committing}
+        report={queue.report}
+        failedCount={queue.items.filter((item) => item.lastError).length}
+        onCommit={flushQueue}
+      />
     </>
   );
 }

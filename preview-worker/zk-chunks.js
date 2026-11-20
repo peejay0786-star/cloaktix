@@ -180,6 +180,182 @@ export const ZK_CHUNKS = {
    "/managed/cloaktix-rate-v3/keys/setSalesOpen.prover.part-02"
   ]
  },
+ "/managed/cloaktix-egg40/keys/addTicketType.prover": {
+  "size": 11278094,
+  "sha256": "1811fc899137bb475c56ae3d8cfe650870ee6a137fd4a2188f6611a9838711df",
+  "parts": [
+   "/managed/cloaktix-egg40/keys/addTicketType.prover.part-00",
+   "/managed/cloaktix-egg40/keys/addTicketType.prover.part-01",
+   "/managed/cloaktix-egg40/keys/addTicketType.prover.part-02"
+  ]
+ },
+ "/managed/cloaktix-egg40/keys/adminSet.prover": {
+  "size": 12326834,
+  "sha256": "080c7be4a0bc27eae6a39e137125deed3f5c9d7161b838f6f1b81be023c99024",
+  "parts": [
+   "/managed/cloaktix-egg40/keys/adminSet.prover.part-00",
+   "/managed/cloaktix-egg40/keys/adminSet.prover.part-01",
+   "/managed/cloaktix-egg40/keys/adminSet.prover.part-02"
+  ]
+ },
+ "/managed/cloaktix-egg40/keys/admit.prover": {
+  "size": 22550961,
+  "sha256": "6228d7dfd2654848ad08130118b9c3343fa77bafeae3dc15192481e84e16541e",
+  "parts": [
+   "/managed/cloaktix-egg40/keys/admit.prover.part-00",
+   "/managed/cloaktix-egg40/keys/admit.prover.part-01",
+   "/managed/cloaktix-egg40/keys/admit.prover.part-02",
+   "/managed/cloaktix-egg40/keys/admit.prover.part-03",
+   "/managed/cloaktix-egg40/keys/admit.prover.part-04",
+   "/managed/cloaktix-egg40/keys/admit.prover.part-05"
+  ]
+ },
+ "/managed/cloaktix-egg40/keys/admitByDoor.prover": {
+  "size": 11279475,
+  "sha256": "3f7790e7a5bb17929590155860a3af862912f5755df586c00b413ec9de87cc25",
+  "parts": [
+   "/managed/cloaktix-egg40/keys/admitByDoor.prover.part-00",
+   "/managed/cloaktix-egg40/keys/admitByDoor.prover.part-01",
+   "/managed/cloaktix-egg40/keys/admitByDoor.prover.part-02"
+  ]
+ },
+ "/managed/cloaktix-egg40/keys/admitByDoor4.prover": {
+  "size": 45101287,
+  "sha256": "149a3a55ff04db0fe870d263d1397e6f8206ff61efa65f0f45571516153eaf96",
+  "parts": [
+   "/managed/cloaktix-egg40/keys/admitByDoor4.prover.part-00",
+   "/managed/cloaktix-egg40/keys/admitByDoor4.prover.part-01",
+   "/managed/cloaktix-egg40/keys/admitByDoor4.prover.part-02",
+   "/managed/cloaktix-egg40/keys/admitByDoor4.prover.part-03",
+   "/managed/cloaktix-egg40/keys/admitByDoor4.prover.part-04",
+   "/managed/cloaktix-egg40/keys/admitByDoor4.prover.part-05",
+   "/managed/cloaktix-egg40/keys/admitByDoor4.prover.part-06",
+   "/managed/cloaktix-egg40/keys/admitByDoor4.prover.part-07",
+   "/managed/cloaktix-egg40/keys/admitByDoor4.prover.part-08",
+   "/managed/cloaktix-egg40/keys/admitByDoor4.prover.part-09",
+   "/managed/cloaktix-egg40/keys/admitByDoor4.prover.part-10"
+  ]
+ },
+ "/managed/cloaktix-egg40/keys/authorizeDoorKey.prover": {
+  "size": 11278569,
+  "sha256": "410e2aae385ad365ff004b145981c6e6a2d2cf1dfdf62be156cc233905e34e09",
+  "parts": [
+   "/managed/cloaktix-egg40/keys/authorizeDoorKey.prover.part-00",
+   "/managed/cloaktix-egg40/keys/authorizeDoorKey.prover.part-01",
+   "/managed/cloaktix-egg40/keys/authorizeDoorKey.prover.part-02"
+  ]
+ },
+ "/managed/cloaktix-egg40/keys/buyResale.prover": {
+  "size": 49296786,
+  "sha256": "711a18603ca8bb561151470166f1bd157491f526e6ddcd01bbd8c9b16d91637b",
+  "parts": [
+   "/managed/cloaktix-egg40/keys/buyResale.prover.part-00",
+   "/managed/cloaktix-egg40/keys/buyResale.prover.part-01",
+   "/managed/cloaktix-egg40/keys/buyResale.prover.part-02",
+   "/managed/cloaktix-egg40/keys/buyResale.prover.part-03",
+   "/managed/cloaktix-egg40/keys/buyResale.prover.part-04",
+   "/managed/cloaktix-egg40/keys/buyResale.prover.part-05",
+   "/managed/cloaktix-egg40/keys/buyResale.prover.part-06",
+   "/managed/cloaktix-egg40/keys/buyResale.prover.part-07",
+   "/managed/cloaktix-egg40/keys/buyResale.prover.part-08",
+   "/managed/cloaktix-egg40/keys/buyResale.prover.part-09",
+   "/managed/cloaktix-egg40/keys/buyResale.prover.part-10",
+   "/managed/cloaktix-egg40/keys/buyResale.prover.part-11"
+  ]
+ },
+ "/managed/cloaktix-egg40/keys/buyResaleAdult.prover": {
+  "size": 49296920,
+  "sha256": "03c2b66764f9ffc1185b8323646dd56b6c82af11981736ba2f56d1da42012c16",
+  "parts": [
+   "/managed/cloaktix-egg40/keys/buyResaleAdult.prover.part-00",
+   "/managed/cloaktix-egg40/keys/buyResaleAdult.prover.part-01",
+   "/managed/cloaktix-egg40/keys/buyResaleAdult.prover.part-02",
+   "/managed/cloaktix-egg40/keys/buyResaleAdult.prover.part-03",
+   "/managed/cloaktix-egg40/keys/buyResaleAdult.prover.part-04",
+   "/managed/cloaktix-egg40/keys/buyResaleAdult.prover.part-05",
+   "/managed/cloaktix-egg40/keys/buyResaleAdult.prover.part-06",
+   "/managed/cloaktix-egg40/keys/buyResaleAdult.prover.part-07",
+   "/managed/cloaktix-egg40/keys/buyResaleAdult.prover.part-08",
+   "/managed/cloaktix-egg40/keys/buyResaleAdult.prover.part-09",
+   "/managed/cloaktix-egg40/keys/buyResaleAdult.prover.part-10",
+   "/managed/cloaktix-egg40/keys/buyResaleAdult.prover.part-11"
+  ]
+ },
+ "/managed/cloaktix-egg40/keys/buyTicket.prover": {
+  "size": 24654322,
+  "sha256": "2b0fd6aa361d561007c32c4588964de90b5af87b4fdfc7913b000fd66003aac1",
+  "parts": [
+   "/managed/cloaktix-egg40/keys/buyTicket.prover.part-00",
+   "/managed/cloaktix-egg40/keys/buyTicket.prover.part-01",
+   "/managed/cloaktix-egg40/keys/buyTicket.prover.part-02",
+   "/managed/cloaktix-egg40/keys/buyTicket.prover.part-03",
+   "/managed/cloaktix-egg40/keys/buyTicket.prover.part-04",
+   "/managed/cloaktix-egg40/keys/buyTicket.prover.part-05"
+  ]
+ },
+ "/managed/cloaktix-egg40/keys/buyTicketAdult.prover": {
+  "size": 49297333,
+  "sha256": "e08dee35107452095fd74bbb0f5ea930d2e7939c09c62374628f03b0d90f66db",
+  "parts": [
+   "/managed/cloaktix-egg40/keys/buyTicketAdult.prover.part-00",
+   "/managed/cloaktix-egg40/keys/buyTicketAdult.prover.part-01",
+   "/managed/cloaktix-egg40/keys/buyTicketAdult.prover.part-02",
+   "/managed/cloaktix-egg40/keys/buyTicketAdult.prover.part-03",
+   "/managed/cloaktix-egg40/keys/buyTicketAdult.prover.part-04",
+   "/managed/cloaktix-egg40/keys/buyTicketAdult.prover.part-05",
+   "/managed/cloaktix-egg40/keys/buyTicketAdult.prover.part-06",
+   "/managed/cloaktix-egg40/keys/buyTicketAdult.prover.part-07",
+   "/managed/cloaktix-egg40/keys/buyTicketAdult.prover.part-08",
+   "/managed/cloaktix-egg40/keys/buyTicketAdult.prover.part-09",
+   "/managed/cloaktix-egg40/keys/buyTicketAdult.prover.part-10",
+   "/managed/cloaktix-egg40/keys/buyTicketAdult.prover.part-11"
+  ]
+ },
+ "/managed/cloaktix-egg40/keys/createEvent.prover": {
+  "size": 11277303,
+  "sha256": "98fa6ae96acc31bf714e9748b1de2bf9ffec9e6c9e96f0978720b57eb52797c7",
+  "parts": [
+   "/managed/cloaktix-egg40/keys/createEvent.prover.part-00",
+   "/managed/cloaktix-egg40/keys/createEvent.prover.part-01",
+   "/managed/cloaktix-egg40/keys/createEvent.prover.part-02"
+  ]
+ },
+ "/managed/cloaktix-egg40/keys/listForResale.prover": {
+  "size": 11278916,
+  "sha256": "d5190b85cec185d3e86c573cc32a722ea79d5cdbbb7201e1d4c0a18a44e11cc3",
+  "parts": [
+   "/managed/cloaktix-egg40/keys/listForResale.prover.part-00",
+   "/managed/cloaktix-egg40/keys/listForResale.prover.part-01",
+   "/managed/cloaktix-egg40/keys/listForResale.prover.part-02"
+  ]
+ },
+ "/managed/cloaktix-egg40/keys/registerAdmit.prover": {
+  "size": 11277956,
+  "sha256": "a484583cd2668e273c37f7f795ac852e8fa7e020b86192023b49c2564041a5e4",
+  "parts": [
+   "/managed/cloaktix-egg40/keys/registerAdmit.prover.part-00",
+   "/managed/cloaktix-egg40/keys/registerAdmit.prover.part-01",
+   "/managed/cloaktix-egg40/keys/registerAdmit.prover.part-02"
+  ]
+ },
+ "/managed/cloaktix-egg40/keys/revokeDoorKey.prover": {
+  "size": 11277839,
+  "sha256": "9be6aaf547fcd22df68155e4b1b39b4b47f952e8f6d2e88e36bca3648900307e",
+  "parts": [
+   "/managed/cloaktix-egg40/keys/revokeDoorKey.prover.part-00",
+   "/managed/cloaktix-egg40/keys/revokeDoorKey.prover.part-01",
+   "/managed/cloaktix-egg40/keys/revokeDoorKey.prover.part-02"
+  ]
+ },
+ "/managed/cloaktix-egg40/keys/setSalesOpen.prover": {
+  "size": 11277395,
+  "sha256": "b16dfd46fd1d2a11e3aa64e207f2c11882ec32eb385cbdd8632158cd11bf8c65",
+  "parts": [
+   "/managed/cloaktix-egg40/keys/setSalesOpen.prover.part-00",
+   "/managed/cloaktix-egg40/keys/setSalesOpen.prover.part-01",
+   "/managed/cloaktix-egg40/keys/setSalesOpen.prover.part-02"
+  ]
+ },
  "/managed/zk-params/bls_midnight_2p15": {
   "size": 6291844,
   "sha256": "724c7c3d779148bb113c7ee9c034b2f27db16e6bdf315fde90105a9bad00b1de",

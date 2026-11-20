@@ -1,0 +1,339 @@
+{
+  "manifest-version": "1",
+  "compiler-version": "0.36.0",
+  "compiler-commit": "b5d9e4dfc532fe47011c4f6296e254f4853eb469",
+  "language-version": "0.28.0",
+  "runtime-version": "0.21.0",
+  "compiler": {
+    "type": "directory",
+    "contract-info.json": {
+      "type": "file",
+      "size": 36801,
+      "hash": "2c83989f505232b99faabafc9779b5db8ca7938d5f2a01a811b29c083b671ea3"
+    }
+  },
+  "contract": {
+    "type": "directory",
+    "index.d.ts": {
+      "type": "file",
+      "size": 19354,
+      "hash": "2b1ffda271ed98cc34d8fe3ce50208bfa8efac7feb115404a4c94b7303f0e74b"
+    },
+    "index.js": {
+      "type": "file",
+      "size": 445801,
+      "hash": "ed7cea3671d3632fd1edf8ef89a9e0f4ae77646e48d7ff0473a14deba0e6c343"
+    },
+    "index.js.map": {
+      "type": "file",
+      "size": 19147,
+      "hash": "63a712ab964e0646fabfe6d8cb78854948465a63b41a381ed7d30a8572ef4b0a"
+    }
+  },
+  "zkir": {
+    "type": "directory",
+    "addTicketType.bzkir": {
+      "type": "file",
+      "size": 1534,
+      "hash": "6569b17766b14bcd3fede9988585c3942604f61959450f2d3c9d332e70cd3347"
+    },
+    "addTicketType.zkir": {
+      "type": "file",
+      "size": 5299,
+      "hash": "06f605894cbb2211a15c7620ef74e9fde5584efd74f2545044a766636915910b"
+    },
+    "adminSet.bzkir": {
+      "type": "file",
+      "size": 1298,
+      "hash": "0668633e6503377f439d8b3dc653471b7a972d767087689a9210f608f92d8d1d"
+    },
+    "adminSet.zkir": {
+      "type": "file",
+      "size": 3406,
+      "hash": "c0dde83eab6582615ba97ebbbcf7b6984812aa3d1164a907caccee20f27db644"
+    },
+    "admit.bzkir": {
+      "type": "file",
+      "size": 2209,
+      "hash": "4979e6c5f7293c631c48ace586e212f4c113832b178a615fb3fa1e049063a49a"
+    },
+    "admit.zkir": {
+      "type": "file",
+      "size": 8435,
+      "hash": "f9355bb8b7a0c03931cff9cd401f00b299076bbe471236e0c5b737f319f47227"
+    },
+    "admitByDoor.bzkir": {
+      "type": "file",
+      "size": 2915,
+      "hash": "c4eeeaba6fbfd86f78d23ff04cf7a7b65e6115885aa571d92dca6132d99dcead"
+    },
+    "admitByDoor.zkir": {
+      "type": "file",
+      "size": 10344,
+      "hash": "dc27337a02d974d98d480452dc66d4521bc6f2bff8dd1bff127d23f7a8fa557b"
+    },
+    "admitByDoor4.bzkir": {
+      "type": "file",
+      "size": 8151,
+      "hash": "1207fb8b634215fa63319c63584cc9e943a652113e201404eda91fc864282c5c"
+    },
+    "admitByDoor4.zkir": {
+      "type": "file",
+      "size": 29224,
+      "hash": "91a5e1a5eaf5eb50b400679a28e6cb3555de5ba3fbb0b201609c818b5d146771"
+    },
+    "authorizeDoorKey.bzkir": {
+      "type": "file",
+      "size": 2009,
+      "hash": "7e27996bf15d7d4eb6117f1946b393a18dfea6c012d02b5aa620232de7bc5e96"
+    },
+    "authorizeDoorKey.zkir": {
+      "type": "file",
+      "size": 6553,
+      "hash": "2c53528293d71d293d1d890dfa08452c8db06fefbf720ca7cd7b5a4d64f7d22f"
+    },
+    "buyResale.bzkir": {
+      "type": "file",
+      "size": 8946,
+      "hash": "fb8da0a0ccfd8199a06c5629bc9b3877f89f59a4f89b728a46b4e1174642293f"
+    },
+    "buyResale.zkir": {
+      "type": "file",
+      "size": 28253,
+      "hash": "6d54ef62b64c8eca2d57fa714610294a82d49e70ae2e1b4506e401550984c2f6"
+    },
+    "buyResaleAdult.bzkir": {
+      "type": "file",
+      "size": 9080,
+      "hash": "e609ec5b6e51ce1c5d05432ed12cd9796284c2bc279e5442b51ee2b3f2dbccaf"
+    },
+    "buyResaleAdult.zkir": {
+      "type": "file",
+      "size": 30527,
+      "hash": "36537a1334f43eef46cf42c063c866a5a8e4a3fd636b01a5e21e8d434f3540bc"
+    },
+    "buyTicket.bzkir": {
+      "type": "file",
+      "size": 8018,
+      "hash": "84330d2a6a2a82046962ffa8904dddc5d5b92096261c8790535881b99f6ebcaa"
+    },
+    "buyTicket.zkir": {
+      "type": "file",
+      "size": 25653,
+      "hash": "ded755cc5a8302830da8ae2d820a22194f39697680ca2b5dd41af26e95497f68"
+    },
+    "buyTicketAdult.bzkir": {
+      "type": "file",
+      "size": 9493,
+      "hash": "6dc81ffcf40e8e97ddbae160c3d0b593551fbb44d8cff9db82830ac1ae082a9e"
+    },
+    "buyTicketAdult.zkir": {
+      "type": "file",
+      "size": 31560,
+      "hash": "4777abe713290ea241e12425c382d9937702cb4c19b03c19f64c701cc4c32c60"
+    },
+    "createEvent.bzkir": {
+      "type": "file",
+      "size": 743,
+      "hash": "0e68c842baef078343c019ad0b99fce2f3392ebc4bce16b6d5eb5e98f93e9b1a"
+    },
+    "createEvent.zkir": {
+      "type": "file",
+      "size": 2728,
+      "hash": "0c5efeb4ab0ea6430a784bf49453def80d07d7a3a2d50125486c06d307d6d8db"
+    },
+    "listForResale.bzkir": {
+      "type": "file",
+      "size": 2356,
+      "hash": "98cb1beff818edf0d4a5a7cb64103178fc70004dc3a48899b1555043f548d4b1"
+    },
+    "listForResale.zkir": {
+      "type": "file",
+      "size": 8444,
+      "hash": "49661ae43fca2d754617d9c125fd870515d65e07ebf3affa1c39c4046be1196c"
+    },
+    "registerAdmit.bzkir": {
+      "type": "file",
+      "size": 1396,
+      "hash": "cca60501043d45e5c1f6d7ac058d010df553b05c08b1ca651199f93b97f7c26a"
+    },
+    "registerAdmit.zkir": {
+      "type": "file",
+      "size": 4915,
+      "hash": "3886b14d324a9a7a02f126d30cc5ef4cbd3632d4f364cdf2cf4f29a82d050ce3"
+    },
+    "revokeDoorKey.bzkir": {
+      "type": "file",
+      "size": 1279,
+      "hash": "9a0abdfe301a572589ebfadfb4b4700e36b2553826555576dd2757c165fb0be5"
+    },
+    "revokeDoorKey.zkir": {
+      "type": "file",
+      "size": 4048,
+      "hash": "b00dc36f629badbb0c684c1af1aaedf68b42f328e3620ba31ff547c841af42bb"
+    },
+    "setSalesOpen.bzkir": {
+      "type": "file",
+      "size": 835,
+      "hash": "8d18c63dc1d114e17a8dfebe963f8e9ad4ee3becbca543f9e906897c6eb7af0e"
+    },
+    "setSalesOpen.zkir": {
+      "type": "file",
+      "size": 3101,
+      "hash": "a4e4d935b23da4763e8d55d724c3e5b21c7ee91232b07910cc15eacd0a095f52"
+    }
+  },
+  "keys": {
+    "type": "directory",
+    "addTicketType.prover": {
+      "type": "file",
+      "size": 11278094,
+      "hash": "1811fc899137bb475c56ae3d8cfe650870ee6a137fd4a2188f6611a9838711df"
+    },
+    "addTicketType.verifier": {
+      "type": "file",
+      "size": 2121,
+      "hash": "c60ab84d3fc89214f4359f83bff6b3c87db2cdc0e9133395a2a32e225b7927c3"
+    },
+    "adminSet.prover": {
+      "type": "file",
+      "size": 12326834,
+      "hash": "080c7be4a0bc27eae6a39e137125deed3f5c9d7161b838f6f1b81be023c99024"
+    },
+    "adminSet.verifier": {
+      "type": "file",
+      "size": 2313,
+      "hash": "511019ec891c52e4a0d4df6deb0cb4ebd348d5f0258c94a4a3318e6d2152935e"
+    },
+    "admit.prover": {
+      "type": "file",
+      "size": 22550961,
+      "hash": "6228d7dfd2654848ad08130118b9c3343fa77bafeae3dc15192481e84e16541e"
+    },
+    "admit.verifier": {
+      "type": "file",
+      "size": 2121,
+      "hash": "4805662155df1621bcd1d892dfc591041e5cb3b2d52387155d978ef5d774bbad"
+    },
+    "admitByDoor.prover": {
+      "type": "file",
+      "size": 11279475,
+      "hash": "3f7790e7a5bb17929590155860a3af862912f5755df586c00b413ec9de87cc25"
+    },
+    "admitByDoor.verifier": {
+      "type": "file",
+      "size": 2121,
+      "hash": "7f16a2decde468fe308a2e539ca4894dd7c1830e613688ecaeccb3df96d4f560"
+    },
+    "admitByDoor4.prover": {
+      "type": "file",
+      "size": 45101287,
+      "hash": "149a3a55ff04db0fe870d263d1397e6f8206ff61efa65f0f45571516153eaf96"
+    },
+    "admitByDoor4.verifier": {
+      "type": "file",
+      "size": 2121,
+      "hash": "bfabe5af02c879717bd0194dac95438a248a79541c96fa5f31e9dc97dd323d0b"
+    },
+    "authorizeDoorKey.prover": {
+      "type": "file",
+      "size": 11278569,
+      "hash": "410e2aae385ad365ff004b145981c6e6a2d2cf1dfdf62be156cc233905e34e09"
+    },
+    "authorizeDoorKey.verifier": {
+      "type": "file",
+      "size": 2121,
+      "hash": "a13f4df1398afeaea64bf5def15d7ac6b9eb43cfb29152cad214cb91f5f96871"
+    },
+    "buyResale.prover": {
+      "type": "file",
+      "size": 49296786,
+      "hash": "711a18603ca8bb561151470166f1bd157491f526e6ddcd01bbd8c9b16d91637b"
+    },
+    "buyResale.verifier": {
+      "type": "file",
+      "size": 2313,
+      "hash": "79ce9ec76e37ade2088c0e2ae5a18a80d0fb8fc34428e49b0d6d14ec978f5cbd"
+    },
+    "buyResaleAdult.prover": {
+      "type": "file",
+      "size": 49296920,
+      "hash": "03c2b66764f9ffc1185b8323646dd56b6c82af11981736ba2f56d1da42012c16"
+    },
+    "buyResaleAdult.verifier": {
+      "type": "file",
+      "size": 2313,
+      "hash": "cf1683ef4234471769bfa0ecf41749cc6120c7f6514fa62650087ed01168a76b"
+    },
+    "buyTicket.prover": {
+      "type": "file",
+      "size": 24654322,
+      "hash": "2b0fd6aa361d561007c32c4588964de90b5af87b4fdfc7913b000fd66003aac1"
+    },
+    "buyTicket.verifier": {
+      "type": "file",
+      "size": 2313,
+      "hash": "14d5bbc857f92781a010b586c758e7eba1d23c72e6857a1120cdf990b017b641"
+    },
+    "buyTicketAdult.prover": {
+      "type": "file",
+      "size": 49297333,
+      "hash": "e08dee35107452095fd74bbb0f5ea930d2e7939c09c62374628f03b0d90f66db"
+    },
+    "buyTicketAdult.verifier": {
+      "type": "file",
+      "size": 2313,
+      "hash": "1e93120898bbc19368771ca0d1a347ebdf2e5ba660df627a189b845364121ede"
+    },
+    "createEvent.prover": {
+      "type": "file",
+      "size": 11277303,
+      "hash": "98fa6ae96acc31bf714e9748b1de2bf9ffec9e6c9e96f0978720b57eb52797c7"
+    },
+    "createEvent.verifier": {
+      "type": "file",
+      "size": 2121,
+      "hash": "d1833d264bdea89f8e9d09adff523cf8cc371905b7c551ea000ea03dc99d03de"
+    },
+    "listForResale.prover": {
+      "type": "file",
+      "size": 11278916,
+      "hash": "d5190b85cec185d3e86c573cc32a722ea79d5cdbbb7201e1d4c0a18a44e11cc3"
+    },
+    "listForResale.verifier": {
+      "type": "file",
+      "size": 2121,
+      "hash": "34f71937db0d478f008fd2e5fa0c4a3cd81bb37180aa102b73342d76c468f79d"
+    },
+    "registerAdmit.prover": {
+      "type": "file",
+      "size": 11277956,
+      "hash": "a484583cd2668e273c37f7f795ac852e8fa7e020b86192023b49c2564041a5e4"
+    },
+    "registerAdmit.verifier": {
+      "type": "file",
+      "size": 2121,
+      "hash": "4ed7efd6f9d3f9c43a8c207c9ea89b62b0520f3c54f361a42b03a0dd45048c85"
+    },
+    "revokeDoorKey.prover": {
+      "type": "file",
+      "size": 11277839,
+      "hash": "9be6aaf547fcd22df68155e4b1b39b4b47f952e8f6d2e88e36bca3648900307e"
+    },
+    "revokeDoorKey.verifier": {
+      "type": "file",
+      "size": 2121,
+      "hash": "8220db6c8336225147ed3cbc2975b538ac1c1a753d2f8cec25629d2eadcd2601"
+    },
+    "setSalesOpen.prover": {
+      "type": "file",
+      "size": 11277395,
+      "hash": "b16dfd46fd1d2a11e3aa64e207f2c11882ec32eb385cbdd8632158cd11bf8c65"
+    },
+    "setSalesOpen.verifier": {
+      "type": "file",
+      "size": 2121,
+      "hash": "6dcf0c6a1303eda23001583dbef172a048436570e10caffc9cc254550ce54203"
+    }
+  }
+}
