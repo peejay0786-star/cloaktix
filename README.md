@@ -77,8 +77,22 @@ signature from the organizer key bound on-chain. It stores no secrets.
 
 ## Screenshots
 
-Captured from the public Preview app on 10 November 2026 (Wave 3 UI). The current app adds door keys, the staff
-door screen and the buy steps, and uses updated button colors.
+### Door check-in (19 November 2026, live app)
+
+Taken on the live Preview app during the first real door test of the Launch Night demo event.
+
+| | |
+|---|---|
+| ![Staff phone approved for Main door](docs/screenshots/egg40/05-staff-phone-approved.png) | ![Staff door scanner, no wallet](docs/screenshots/egg40/06-staff-scanner.png) |
+| Staff phone approved on-chain for Main door. No wallet on the phone. | Door scanner with relay status and key window. |
+| ![Camera scan](docs/screenshots/egg40/07-camera-scan.png) | ![Valid, admit 1](docs/screenshots/egg40/09-valid.png) |
+| Camera scan of the ticket QR. | Valid ticket: entry saved to the signed relay. A second scan shows Already used. |
+| ![Door not open yet](docs/screenshots/egg40/08-door-not-open-yet.png) | |
+| Before the key window opens, the ticket is checked but nothing is recorded. | |
+
+### Wave 3 UI (10 November 2026)
+
+Captured from the public Preview app on 10 November 2026, before door keys and the updated button colors.
 
 ![Home](docs/screenshots/01-home.png)
 
@@ -208,7 +222,7 @@ door-relay/         Cloudflare Worker for door entries (EGG-40)
 public-serve/       Local static/catalog server used by the Vite dev server
 coming-soon/        Public cloaktix.com landing
 slides/             Buildathon deck (v4, PDF)
-docs/screenshots/   App screenshots (10 November 2026, Wave 3 UI)
+docs/screenshots/   App screenshots (Wave 3 UI, 10 Nov; door check-in in egg40/, 19 Nov)
 test/               Contract simulator tests
 brand/              Logo and brand kit (please do not modify the logo)
 ```
